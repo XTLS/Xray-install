@@ -1,0 +1,34 @@
+#!/sbin/openrc-run
+
+name="V2Ray"
+description="A platform for building proxies to bypass network restrictions"
+description_checkconfig="Verify configuration file"
+
+: ${confdir:="/usr/local/etc/v2ray/"}
+: ${env:="V2RAY_LOCATION_ASSET=/usr/local/lib/v2ray/"}
+
+command="/usr/local/bin/v2ray"
+command_args="-confdir $confdir"
+command_user="nobody"
+
+pidfile="/run/v2ray.pid"
+command_background="yes"
+
+extra_commands="checkconfig"
+
+depend() {
+	need net
+}
+
+checkconfig() {
+	if [ ! -d "$confdir" ] ; then
+		eerror "You need to setup $confdir first"
+		return 1
+	fi
+	$command -test $command_args
+}
+
+start_pre() {
+	export $env
+	checkconfig
+}
