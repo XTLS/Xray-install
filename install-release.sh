@@ -106,7 +106,7 @@ echo "You may need to execute a command to remove dependent software: apk del cu
 if [[ "$V2RAY_RUNNING" -eq '1' ]]; then
     rc-service v2ray start
 else
-    echo 'Please execute the command: rcctl enable v2ray; rcctl start v2ray'
+    echo 'Please execute the command: rc-update add v2ray; rc-service v2ray start'
 fi
 
 rm -r "$TMP_DIRECTORY"
