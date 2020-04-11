@@ -2,10 +2,10 @@
 
 name="V2Ray"
 description="A platform for building proxies to bypass network restrictions"
-description_checkconfig="Verify configuration file"
+description_checkconfig="Test configuration file"
 
-: ${confdir:="/usr/local/etc/v2ray/"}
 : ${env:="V2RAY_LOCATION_ASSET=/usr/local/lib/v2ray/"}
+: ${confdir:="/usr/local/etc/v2ray/"}
 
 command="/usr/local/bin/v2ray"
 command_args="-confdir $confdir"
@@ -21,7 +21,7 @@ depend() {
 }
 
 checkconfig() {
-	if [ ! -d "$confdir" ] ; then
+	if [ ! -d "$confdir" ]; then
 		eerror "You need to setup $confdir first"
 		return 1
 	fi
