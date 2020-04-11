@@ -49,7 +49,7 @@ done
 
 unzip -q "$ZIP_FILE" -d "$TMP_DIRECTORY"
 
-V2RAY_RUNNING=
+V2RAY_RUNNING='0'
 if [ -n "$(pgrep v2ray)" ]; then
     rc-service v2ray stop
     V2RAY_RUNNING='1'
@@ -59,7 +59,7 @@ install -m 755 "${TMP_DIRECTORY}v2ctl" "/usr/local/bin/v2ctl"
 install -d /usr/local/lib/v2ray/
 install -m 755 "${TMP_DIRECTORY}geoip.dat" "/usr/local/lib/v2ray/geoip.dat"
 install -m 755 "${TMP_DIRECTORY}geosite.dat" "/usr/local/lib/v2ray/geosite.dat"
-CONFDIR=
+CONFDIR='0'
 if [ ! -d '/usr/local/etc/v2ray/' ]; then
     install -d /usr/local/etc/v2ray/
     for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_transport 08_stats 09_reverse; do
@@ -67,12 +67,12 @@ if [ ! -d '/usr/local/etc/v2ray/' ]; then
     done
     CONFDIR='1'
 fi
-LOG=
+LOG='0'
 if [ ! -d '/var/log/v2ray/' ]; then
     install -d -o nobody -g nobody /var/log/v2ray/
     LOG='1'
 fi
-OPENRC=
+OPENRC='0'
 if [ ! -f '/etc/init.d/v2ray' ]; then
     mkdir "${TMP_DIRECTORY}init.d/"
     curl -o "${TMP_DIRECTORY}init.d/v2ray" https://raw.githubusercontent.workers.dev/v2fly/alpinelinux-install-v2ray/master/init.d/v2ray -s
