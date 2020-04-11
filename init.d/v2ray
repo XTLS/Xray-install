@@ -29,6 +29,6 @@ checkconfig() {
 }
 
 start_pre() {
-	export $env
+	local $env
 	checkconfig
 }
