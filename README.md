@@ -1,5 +1,13 @@
 # alpinelinux-install-v2ray
 
+## 依賴軟體
+
+### 安裝 cURL
+
+```
+# apk add curl
+```
+
 ## 下載
 
 ```

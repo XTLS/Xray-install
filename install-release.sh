@@ -49,6 +49,10 @@ done
 
 unzip -q "$ZIP_FILE" -d "$TMP_DIRECTORY"
 
+if [ -n "$(pgrep v2ray)" ]; then
+    rc-service v2ray stop
+    V2RAY_RUNNING='1'
+fi
 install -m 755 "${TMP_DIRECTORY}v2ray" "/usr/local/bin/v2ray"
 install -m 755 "${TMP_DIRECTORY}v2ctl" "/usr/local/bin/v2ctl"
 install -d /usr/local/lib/v2ray/
@@ -76,8 +80,6 @@ if [ ! -f '/etc/init.d/v2ray' ]; then
     OPENRC=yes
 fi
 
-rm -r "$TMP_DIRECTORY"
-
 echo 'installed: /usr/local/bin/v2ray'
 echo 'installed: /usr/local/bin/v2ctl'
 echo 'installed: /usr/local/lib/v2ray/geoip.dat'
@@ -100,3 +102,13 @@ fi
 if [ -n "$OPENRC" ]; then
     echo 'installed: /etc/init.d/v2ray'
 fi
+echo "You may need to execute a command to remove dependent software: apk del curl unzip"
+if [ "$V2RAY_RUNNING" -eq '1' ]; then
+    rc-service v2ray start
+else
+    echo 'Please execute the command: rcctl enable v2ray; rcctl start v2ray'
+fi
+
+rm -r "$TMP_DIRECTORY"
+echo "removed: $TMP_DIRECTORY"
+echo "info: V2Ray is installed."
