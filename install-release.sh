@@ -34,12 +34,12 @@ fi
 curl -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE.dgst" "$DOWNLOAD_LINK.dgst" -#
 if [[ "$?" -ne '0' ]]; then
     echo 'error: Download failed! Please check your network or try again.'
-    return 1
+    exit 1
 fi
 
 if [[ "$(cat $ZIP_FILE.dgst)" == 'Not Found' ]]; then
     echo 'error: This version does not support verification. Please replace with another version.'
-    return 1
+    exit 1
 fi
 # Verification of V2Ray archive
 for LISTSUM in 'md5' 'sha1' 'sha256' 'sha512'; do
@@ -47,7 +47,7 @@ for LISTSUM in 'md5' 'sha1' 'sha256' 'sha512'; do
     CHECKSUM="$(grep $(echo $LISTSUM | tr [:lower:] [:upper:]) $ZIP_FILE.dgst | sed 's/.* //')"
     if [[ "$SUM" != "$CHECKSUM" ]]; then
         echo 'error: Check failed! Please check your network or try again.'
-        return 1
+        exit 1
     fi
 done
 
