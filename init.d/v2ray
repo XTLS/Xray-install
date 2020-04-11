@@ -25,10 +25,10 @@ checkconfig() {
 		eerror "You need to setup $confdir first"
 		return 1
 	fi
+	export $env
 	$command -test $command_args
 }
 
 start_pre() {
-	export $env
 	checkconfig
 }
