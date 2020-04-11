@@ -41,7 +41,7 @@ fi
 for LISTSUM in 'md5' 'sha1' 'sha256' 'sha512'; do
     SUM="$(${LISTSUM}sum $ZIP_FILE | sed 's/ .*//')"
     CHECKSUM="$(grep $(echo $LISTSUM | tr [[:lower:]] [:upper:]) $ZIP_FILE.dgst | sed 's/.* //')"
-    if [[[ "$SUM" != "$CHECKSUM" ]]]; then
+    if [[ "$SUM" != "$CHECKSUM" ]]; then
         echo 'error: Check failed! Please check your network or try again.'
         exit 1
     fi
@@ -72,7 +72,7 @@ fi
 if [[ ! -f '/etc/init.d/v2ray' ]]; then
     mkdir "${TMP_DIRECTORY}init.d/"
     curl -o "${TMP_DIRECTORY}init.d/v2ray" https://raw.githubusercontent.workers.dev/v2fly/alpinelinux-install-v2ray/master/init.d/v2ray -s
-    if [[[ "$?" -ne '0' ]]]; then
+    if [[ "$?" -ne '0' ]]; then
         echo 'error: Failed to start service file download! Please check your network or try again.'
         exit 1
     fi
