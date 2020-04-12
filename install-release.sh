@@ -1,23 +1,22 @@
 #!/bin/ash
 
+# Identify architecture
+case "$(arch -s)" in
+    'i386' | 'i686')
+        BIT='32'
+        ;;
+    'amd64' | 'x86_64')
+        BIT='64'
+        ;;
+    *)
+        echo "error: The architecture is not supported."
+        exit 1
+        ;;
+esac
+
 TMP_DIRECTORY="$(mktemp -d)/"
 ZIP_FILE="${TMP_DIRECTORY}v2ray-linux-$BIT.zip"
 DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-$BIT.zip"
-
-identify_architecture() {
-    case "$(arch -s)" in
-        'i386' | 'i686')
-            BIT='32'
-            ;;
-        'amd64' | 'x86_64')
-            BIT='64'
-            ;;
-        *)
-            echo "error: The architecture is not supported."
-            exit 1
-            ;;
-    esac
-}
 
 install_software() {
     if [[ -n "$(command -v curl)" ]]; then
@@ -148,7 +147,6 @@ information() {
 }
 
 main() {
-    identify_architecture
     install_software
     install_software
     download_v2ray
