@@ -92,8 +92,8 @@ install_log() {
     LOG='0'
     if [ ! -d '/var/log/v2ray/' ]; then
         install -d -o nobody -g nobody /var/log/v2ray/
-        install -m 600 -o nobody -g nobody /var/log/v2ray/access.log
-        install -m 600 -o nobody -g nobody /var/log/v2ray/error.log
+        install -m 600 -o nobody -g nobody /dev/null /var/log/v2ray/access.log
+        install -m 600 -o nobody -g nobody /dev/null /var/log/v2ray/error.log
         LOG='1'
     fi
 }
