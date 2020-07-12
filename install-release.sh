@@ -1,4 +1,6 @@
-#!/bin/ash
+#!/usr/bin/env bash
+
+set -euxo pipefail
 
 # Identify architecture
 case "$(arch -s)" in
