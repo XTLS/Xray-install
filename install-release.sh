@@ -273,6 +273,7 @@ download_xray() {
     echo 'error: Download failed! Please check your network or try again.'
     return 1
   fi
+  return 0
   echo "Downloading verification file for Xray archive: $DOWNLOAD_LINK.dgst"
   if ! curl -x "${PROXY}" -sSR -H 'Cache-Control: no-cache' -o "$ZIP_FILE.dgst" "$DOWNLOAD_LINK.dgst"; then
     echo 'error: Download failed! Please check your network or try again.'
