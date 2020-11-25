@@ -367,7 +367,7 @@ install_startup_service_file() {
 # Or all changes you made will be lost!  # Refer: https://www.freedesktop.org/software/systemd/man/systemd.unit.html
 [Service]
 ExecStart=
-ExecStart=/usr/local/bin/xray -confdir $JSONS_PATH" |
+ExecStart=/usr/local/bin/xray run -confdir $JSONS_PATH" |
       tee '/etc/systemd/system/xray.service.d/10-donot_touch_multi_conf.conf' > \
         '/etc/systemd/system/xray@.service.d/10-donot_touch_multi_conf.conf'
   else
@@ -377,13 +377,13 @@ ExecStart=/usr/local/bin/xray -confdir $JSONS_PATH" |
 # Or all changes you made will be lost!  # Refer: https://www.freedesktop.org/software/systemd/man/systemd.unit.html
 [Service]
 ExecStart=
-ExecStart=/usr/local/bin/xray -config ${JSON_PATH}/config.json" > \
+ExecStart=/usr/local/bin/xray run -config ${JSON_PATH}/config.json" > \
       '/etc/systemd/system/xray.service.d/10-donot_touch_single_conf.conf'
     echo "# In case you have a good reason to do so, duplicate this file in the same directory and make your customizes there.
 # Or all changes you made will be lost!  # Refer: https://www.freedesktop.org/software/systemd/man/systemd.unit.html
 [Service]
 ExecStart=
-ExecStart=/usr/local/bin/xray -config ${JSON_PATH}/%i.json" > \
+ExecStart=/usr/local/bin/xray run -config ${JSON_PATH}/%i.json" > \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_single_conf.conf'
   fi
   echo "info: Systemd service files have been installed successfully!"
