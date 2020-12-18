@@ -357,10 +357,36 @@ install_xray() {
 }
 
 install_startup_service_file() {
-  install -m 644 "${TMP_DIRECTORY}/systemd/system/xray.service" /etc/systemd/system/xray.service
-  install -m 644 "${TMP_DIRECTORY}/systemd/system/xray@.service" /etc/systemd/system/xray@.service
   mkdir -p '/etc/systemd/system/xray.service.d'
   mkdir -p '/etc/systemd/system/xray@.service.d/'
+  echo '[Unit]
+Description=Xray Service
+Documentation=https://github.com/xtls
+After=network.target nss-lookup.target
+
+[Service]
+User=nobody
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
+
+[Install]
+WantedBy=multi-user.target' > /etc/systemd/system/xray.service
+  echo '[Unit]
+Description=Xray Service
+Documentation=https://github.com/xtls
+After=network.target nss-lookup.target
+
+[Service]
+User=nobody
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/%i.json
+
+[Install]
+WantedBy=multi-user.target' > /etc/systemd/system/xray@.service
   if [[ -n "$JSONS_PATH" ]]; then
     "rm" '/etc/systemd/system/xray.service.d/10-donot_touch_single_conf.conf' \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_single_conf.conf'
