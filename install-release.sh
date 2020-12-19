@@ -45,8 +45,8 @@ systemd_cat_config() {
 }
 
 check_if_running_as_root() {
-  # If you want to run as another user, please modify $UID to be owned by this user
-  if [[ "$UID" -ne '0' ]]; then
+  # If you want to run as another user, please modify $EUID to be owned by this user
+  if [[ "$EUID" -ne '0' ]]; then
     echo "error: You must run this script as root!"
     exit 1
   fi
@@ -185,6 +185,13 @@ judgment_parameters() {
         PROXY="$2"
         shift
         ;;
+      '-u' | '--install-user')
+        if [[ -z "${2:?error: Please specify the install user.}" ]]; then
+          exit 1
+        fi
+        INSTALL_USER="$2"
+        break
+        ;;
       *)
         echo "$0: unknown option -- -"
         exit 1
@@ -192,6 +199,25 @@ judgment_parameters() {
     esac
     shift
   done
+}
+
+check_install_user() {
+  if [[ -z "$INSTALL_USER" ]]; then
+    if [[ -f '/usr/local/bin/xray' ]]; then
+      INSTALL_USER="$(grep '^[ '$'\t]*User[ '$'\t]*=' /etc/systemd/system/xray.service | tail -n 1 | awk -F = '{print $2}' | awk '{print $1}')"
+      if [[ -z "$INSTALL_USER" ]]; then
+        INSTALL_USER='root'
+      fi
+    else
+      INSTALL_USER='nobody'
+    fi
+  fi
+  if ! id $INSTALL_USER 2&>1 >/dev/null; then
+    echo "the user '$INSTALL_USER' is not effective"
+    exit 1
+  fi
+  INSTALL_USER_UID="$(id -u $INSTALL_USER)"
+  INSTALL_USER_GID="$(id -g $INSTALL_USER)"
 }
 
 install_software() {
@@ -343,50 +369,50 @@ install_xray() {
 
   # Used to store Xray log files
   if [[ ! -d '/var/log/xray/' ]]; then
-    if id nobody | grep -qw 'nogroup'; then
-      install -d -m 700 -o nobody -g nogroup /var/log/xray/
-      install -m 600 -o nobody -g nogroup /dev/null /var/log/xray/access.log
-      install -m 600 -o nobody -g nogroup /dev/null /var/log/xray/error.log
-    else
-      install -d -m 700 -o nobody -g nobody /var/log/xray/
-      install -m 600 -o nobody -g nobody /dev/null /var/log/xray/access.log
-      install -m 600 -o nobody -g nobody /dev/null /var/log/xray/error.log
-    fi
+    install -d -m 700 -o $INSTALL_USER_UID -g $INSTALL_USER_GID /var/log/xray/
+    install -m 600 -o $INSTALL_USER_UID -g $INSTALL_USER_GID /dev/null /var/log/xray/access.log
+    install -m 600 -o $INSTALL_USER_UID -g $INSTALL_USER_GID /dev/null /var/log/xray/error.log
     LOG='1'
+  else
+    chown -R $INSTALL_USER_UID:$INSTALL_USER_GID /var/log/xray/
   fi
 }
 
 install_startup_service_file() {
   mkdir -p '/etc/systemd/system/xray.service.d'
   mkdir -p '/etc/systemd/system/xray@.service.d/'
-  echo '[Unit]
+cat > /etc/systemd/system/xray.service << EOF
+[Unit]
 Description=Xray Service
 Documentation=https://github.com/xtls
 After=network.target nss-lookup.target
 
 [Service]
-User=nobody
+User=$INSTALL_USER
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
 
 [Install]
-WantedBy=multi-user.target' > /etc/systemd/system/xray.service
-  echo '[Unit]
+WantedBy=multi-user.target
+EOF
+cat > /etc/systemd/system/xray@.service <<EOF
+[Unit]
 Description=Xray Service
 Documentation=https://github.com/xtls
 After=network.target nss-lookup.target
 
 [Service]
-User=nobody
+User=$INSTALL_USER
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/%i.json
 
 [Install]
-WantedBy=multi-user.target' > /etc/systemd/system/xray@.service
+WantedBy=multi-user.target
+EOF
   if [[ -n "$JSONS_PATH" ]]; then
     "rm" '/etc/systemd/system/xray.service.d/10-donot_touch_single_conf.conf' \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_single_conf.conf'
@@ -509,13 +535,14 @@ remove_xray() {
 show_help() {
   echo "usage: $0 [--remove | --version number | -c | -f | -h | -l | -p]"
   echo '  [-p address] [--version number | -c | -f]'
-  echo '  --remove        Remove Xray'
-  echo '  --version       Install the specified version of Xray, e.g., --version v1.0.0'
-  echo '  -c, --check     Check if Xray can be updated'
-  echo '  -f, --force     Force installation of the latest version of Xray'
-  echo '  -h, --help      Show help'
-  echo '  -l, --local     Install Xray from a local file'
-  echo '  -p, --proxy     Download through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
+  echo '  --remove           Remove Xray'
+  echo '  --version          Install the specified version of Xray, e.g., --version v1.0.0'
+  echo '  -c, --check        Check if Xray can be updated'
+  echo '  -f, --force        Force installation of the latest version of Xray'
+  echo '  -h, --help         Show help'
+  echo '  -l, --local        Install Xray from a local file'
+  echo '  -p, --proxy        Download through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
+  echo '  -u, --install-user Install Xray in specified user, e.g, -u root'
   exit 0
 }
 
@@ -523,6 +550,7 @@ main() {
   check_if_running_as_root
   identify_the_operating_system_and_architecture
   judgment_parameters "$@"
+  check_install_user
 
   install_software "$package_provide_tput" 'tput'
   red=$(tput setaf 1)
