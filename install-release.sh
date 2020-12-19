@@ -393,6 +393,8 @@ CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
+LimitNPROC=10000
+LimitNOFILE=1000000
 
 [Install]
 WantedBy=multi-user.target
@@ -409,10 +411,13 @@ CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/%i.json
+LimitNPROC=10000
+LimitNOFILE=1000000
 
 [Install]
 WantedBy=multi-user.target
 EOF
+  chmod 644 /etc/systemd/system/xray.service /etc/systemd/system/xray@.service
   if [[ -n "$JSONS_PATH" ]]; then
     "rm" '/etc/systemd/system/xray.service.d/10-donot_touch_single_conf.conf' \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_single_conf.conf'
