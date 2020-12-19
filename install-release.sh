@@ -212,7 +212,7 @@ check_install_user() {
       INSTALL_USER='nobody'
     fi
   fi
-  if ! id $INSTALL_USER 2&>1 >/dev/null; then
+  if ! id $INSTALL_USER > /dev/null 2>&1; then
     echo "the user '$INSTALL_USER' is not effective"
     exit 1
   fi
