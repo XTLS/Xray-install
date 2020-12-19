@@ -531,13 +531,14 @@ remove_xray() {
 show_help() {
   echo "usage: $0 [--remove | --version number | -c | -f | -h | -l | -p]"
   echo '  [-p address] [--version number | -c | -f]'
-  echo '  --remove        Remove Xray'
-  echo '  --version       Install the specified version of Xray, e.g., --version v1.0.0'
-  echo '  -c, --check     Check if Xray can be updated'
-  echo '  -f, --force     Force installation of the latest version of Xray'
-  echo '  -h, --help      Show help'
-  echo '  -l, --local     Install Xray from a local file'
-  echo '  -p, --proxy     Download through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
+  echo '  --remove           Remove Xray'
+  echo '  --version          Install the specified version of Xray, e.g., --version v1.0.0'
+  echo '  -c, --check        Check if Xray can be updated'
+  echo '  -f, --force        Force installation of the latest version of Xray'
+  echo '  -h, --help         Show help'
+  echo '  -l, --local        Install Xray from a local file'
+  echo '  -p, --proxy        Download through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
+  echo '  -u, --install-user Install Xray in specified user, e.g, -u root'
   exit 0
 }
 
