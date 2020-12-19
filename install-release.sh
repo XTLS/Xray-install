@@ -381,7 +381,8 @@ install_xray() {
 install_startup_service_file() {
   mkdir -p '/etc/systemd/system/xray.service.d'
   mkdir -p '/etc/systemd/system/xray@.service.d/'
-  echo "[Unit]
+cat > /etc/systemd/system/xray.service << EOF
+[Unit]
 Description=Xray Service
 Documentation=https://github.com/xtls
 After=network.target nss-lookup.target
@@ -394,8 +395,10 @@ NoNewPrivileges=true
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
 
 [Install]
-WantedBy=multi-user.target" > /etc/systemd/system/xray.service
-  echo "[Unit]
+WantedBy=multi-user.target
+EOF
+cat > /etc/systemd/system/xray@.service <<EOF
+[Unit]
 Description=Xray Service
 Documentation=https://github.com/xtls
 After=network.target nss-lookup.target
@@ -408,7 +411,8 @@ NoNewPrivileges=true
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/%i.json
 
 [Install]
-WantedBy=multi-user.target" > /etc/systemd/system/xray@.service
+WantedBy=multi-user.target
+EOF
   if [[ -n "$JSONS_PATH" ]]; then
     "rm" '/etc/systemd/system/xray.service.d/10-donot_touch_single_conf.conf' \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_single_conf.conf'
