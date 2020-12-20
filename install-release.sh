@@ -148,49 +148,58 @@ identify_the_operating_system_and_architecture() {
 
 ## Demo function for processing parameters
 judgment_parameters() {
+  HELP='0'
+  CHECK='0'
+  REMOVE='0'
+  LOCAL_INSTALL='0'
+  local temp_version='0'
   while [[ "$#" -gt '0' ]]; do
     case "$1" in
       '--remove')
-        if [[ "$#" -gt '1' ]]; then
-          echo 'error: Please enter the correct parameters.'
-          exit 1
-        fi
         REMOVE='1'
         ;;
       '--version')
-        VERSION="${2:?error: Please specify the correct version.}"
-        break
+        if [[ -z "$2" ]]; then
+          echo "error: Please specify the correct version."
+          exit 1
+        fi
+        temp_version='1'
+        VERSION="$2"
+        shift
         ;;
       '-c' | '--check')
         CHECK='1'
-        break
         ;;
       '-f' | '--force')
         FORCE='1'
-        break
         ;;
       '-h' | '--help')
         HELP='1'
-        break
         ;;
       '-l' | '--local')
         LOCAL_INSTALL='1'
-        LOCAL_FILE="${2:?error: Please specify the correct local file.}"
-        break
+        if [[ -z "$2" ]]; then
+          echo "error: Please specify the correct local file."
+          exit 1
+        fi
+        LOCAL_FILE="$2"
+        shift
         ;;
       '-p' | '--proxy')
-        if [[ -z "${2:?error: Please specify the proxy server address.}" ]]; then
+        if [[ -z "$2" ]]; then
+          echo "error: Please specify the proxy server address."
           exit 1
         fi
         PROXY="$2"
         shift
         ;;
       '-u' | '--install-user')
-        if [[ -z "${2:?error: Please specify the install user.}" ]]; then
+        if [[ -z "$2" ]]; then
+          echo "error: Please specify the install user.}"
           exit 1
         fi
         INSTALL_USER="$2"
-        break
+        shift
         ;;
       *)
         echo "$0: unknown option -- -"
@@ -199,6 +208,18 @@ judgment_parameters() {
     esac
     shift
   done
+  if ((HELP+CHECK+REMOVE>1)); then
+    echo "--help, --check and --remove can't be used together."
+    exit 1
+  fi
+  if ((temp_version+LOCAL_INSTALL>1)); then
+    echo "--version and --local can't be used together."
+    exit 1
+  fi
+  if ((temp_version+CHECK>1)); then
+    echo "--version and --check can't be used together."
+    exit 1
+  fi
 }
 
 check_install_user() {
@@ -232,24 +253,33 @@ install_software() {
   fi
 }
 
+get_current_version() {
+  if [[ -f '/usr/local/bin/xray' ]]; then
+    CURRENT_VERSION="$(/usr/local/bin/xray -version | awk 'NR==1 {print $2}')"
+    CURRENT_VERSION="v${CURRENT_VERSION#v}"
+  fi
+}
+
 get_version() {
-  # 0: Install or update Xray.
-  # 1: Installed or no new version of Xray.
-  # 2: Install the specified version of Xray.
+  # 0: There is a version can be installed (RELEASE_VERSION).
+  # 1: The current version is the latest.
+  # 2: The specified version is same to the current version.
+  # RELEASE_VERSION, RELEASE_LATEST and CURRENT_VERSION will be used in a later process
+
+  # Get the CURRENT_VERSION
+  get_current_version
+
+  # Check if there is a specified version
   if [[ -n "$VERSION" ]]; then
     RELEASE_VERSION="v${VERSION#v}"
-    return 2
-  fi
-  # Determine the version number for Xray installed from a local file
-  if [[ -f '/usr/local/bin/xray' ]]; then
-    VERSION="$(/usr/local/bin/xray -version | awk 'NR==1 {print $2}')"
-    CURRENT_VERSION="v${VERSION#v}"
-    if [[ "$LOCAL_INSTALL" -eq '1' ]]; then
-      RELEASE_VERSION="$CURRENT_VERSION"
-      return
+    if [[ "$RELEASE_VERSION" == "$CURRENT_VERSION" ]]; then
+      return 2
+    else
+      return 0
     fi
   fi
-  # Get Xray release version number
+
+  # Get Xray latest release version number
   TMP_FILE="$(mktemp)"
   if ! curl -x "${PROXY}" -sS -H "Accept: application/vnd.github.v3+json" -o "$TMP_FILE" 'https://api.github.com/repos/XTLS/Xray-core/releases/latest'; then
     "rm" "$TMP_FILE"
@@ -257,9 +287,15 @@ get_version() {
     exit 1
   fi
   RELEASE_LATEST="$(sed 'y/,/\n/' "$TMP_FILE" | grep 'tag_name' | awk -F '"' '{print $4}')"
+  if [[ -z "$RELEASE_LATEST" ]]; then
+    echo "error: Failed to get the latest release version"
+    exit 1
+  fi
   "rm" "$TMP_FILE"
-  RELEASE_VERSION="v${RELEASE_LATEST#v}"
-  # Compare Xray version numbers
+  RELEASE_LATEST="v${RELEASE_LATEST#v}"
+
+  # Check if the current version is latest
+  RELEASE_VERSION="${RELEASE_LATEST}"
   if [[ "$RELEASE_VERSION" != "$CURRENT_VERSION" ]]; then
     RELEASE_VERSIONSION_NUMBER="${RELEASE_VERSION#v}"
     RELEASE_MAJOR_VERSION_NUMBER="${RELEASE_VERSIONSION_NUMBER%%.*}"
@@ -488,7 +524,7 @@ check_update() {
     get_version
     local get_ver_exit_code=$?
     if [[ "$get_ver_exit_code" -eq '0' ]]; then
-      echo "info: Found the latest release of Xray $RELEASE_VERSION . (Current release: $CURRENT_VERSION)"
+      echo "info: Found the latest release of Xray $RELEASE_LATEST . (Current release: $CURRENT_VERSION)"
     elif [[ "$get_ver_exit_code" -eq '1' ]]; then
       echo "info: No new version. The current version of Xray is $CURRENT_VERSION ."
     fi
@@ -538,8 +574,8 @@ remove_xray() {
 
 # Explanation of parameters in the script
 show_help() {
-  echo "usage: $0 [--remove | --version number | -c | -f | -h | -l | -p]"
-  echo '  [-p address] [--version number | -c | -f]'
+  echo "usage: $0 [OPTION]..."
+  echo 'OPTION:'
   echo '  --remove           Remove Xray'
   echo '  --version          Install the specified version of Xray, e.g., --version v1.0.0'
   echo '  -c, --check        Check if Xray can be updated'
@@ -555,7 +591,6 @@ main() {
   check_if_running_as_root
   identify_the_operating_system_and_architecture
   judgment_parameters "$@"
-  check_install_user
 
   install_software "$package_provide_tput" 'tput'
   red=$(tput setaf 1)
@@ -567,6 +602,9 @@ main() {
   [[ "$HELP" -eq '1' ]] && show_help
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_xray
+
+  # Check if the user is effective
+  check_install_user
 
   # Two very important variables
   TMP_DIRECTORY="$(mktemp -d)"
@@ -584,7 +622,7 @@ main() {
     install_software 'curl' 'curl'
     get_version
     NUMBER="$?"
-    if [[ "$NUMBER" -eq '0' ]] || [[ "$FORCE" -eq '1' ]] || [[ "$NUMBER" -eq 2 ]]; then
+    if [[ "$NUMBER" -eq '0' ]] || [[ "$FORCE" -eq '1' ]]; then
       echo "info: Installing Xray $RELEASE_VERSION for $(uname -m)"
       download_xray
       if [[ "$?" -eq '1' ]]; then
@@ -596,6 +634,9 @@ main() {
       decompression "$ZIP_FILE"
     elif [[ "$NUMBER" -eq '1' ]]; then
       echo "info: No new version. The current version of Xray is $CURRENT_VERSION ."
+      exit 0
+    elif [[ "$NUMBER" -eq '2' ]]; then
+      echo "info: The current version is same as the specified version. The version is $CURRENT_VERSION ."
       exit 0
     fi
   fi
@@ -641,10 +682,8 @@ main() {
   fi
   "rm" -r "$TMP_DIRECTORY"
   echo "removed: $TMP_DIRECTORY"
-  if [[ "$LOCAL_INSTALL" -eq '1' ]]; then
-    get_version
-  fi
-  echo "info: Xray $RELEASE_VERSION is installed."
+  get_current_version
+  echo "info: Xray $CURRENT_VERSION is installed."
   echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"
   if [[ "$XRAY_RUNNING" -eq '1' ]]; then
     start_xray
