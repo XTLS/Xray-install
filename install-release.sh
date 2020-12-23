@@ -577,24 +577,24 @@ remove_xray() {
     if [[ -n "$(pidof xray)" ]]; then
       stop_xray
     fi
-    local delet_files=('/usr/local/bin/xray' '/etc/systemd/system/xray.service' '/etc/systemd/system/xray@.service' '/etc/systemd/system/xray.service.d' '/etc/systemd/system/xray@.service.d')
-    [[ -d "$DAT_PATH" ]] && delet_files+=("$DAT_PATH")
+    local delete_files=('/usr/local/bin/xray' '/etc/systemd/system/xray.service' '/etc/systemd/system/xray@.service' '/etc/systemd/system/xray.service.d' '/etc/systemd/system/xray@.service.d')
+    [[ -d "$DAT_PATH" ]] && delete_files+=("$DAT_PATH")
     if [[ "$PURGE" -eq '1' ]]; then
       if [[ -z "$JSONS_PATH" ]]; then
-        delet_files+=("$JSON_PATH")
+        delete_files+=("$JSON_PATH")
       else
-        delet_files+=("$JSONS_PATH")
+        delete_files+=("$JSONS_PATH")
       fi
-      delet_files+=('/var/log/xray')
+      delete_files+=('/var/log/xray')
     fi
     systemctl disable xray
-    if ! ("rm" -r "${delet_files[@]}"); then
+    if ! ("rm" -r "${delete_files[@]}"); then
       echo 'error: Failed to remove Xray.'
       exit 1
     else
-      for i in ${!delet_files[@]}
+      for i in ${!delete_files[@]}
       do
-        echo "removed: ${delet_files[$i]}"
+        echo "removed: ${delete_files[$i]}"
       done
       systemctl daemon-reload
       echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"
