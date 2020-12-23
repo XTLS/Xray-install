@@ -760,7 +760,7 @@ main() {
   if [[ "$XRAY_RUNNING" -eq '1' ]]; then
     start_xray
   else
-    systemctl enable xray && systemctl start xray
+    systemctl enable xray --now
     if [[ "$?" -eq 0 ]]; then
       echo "info: Enable and start the Xray service"
     else
