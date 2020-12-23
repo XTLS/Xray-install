@@ -33,26 +33,32 @@ CURRENT_VERSION=""
 RELEASE_LATEST=""
 # Xray version will be installed
 INSTALL_VERSION=""
-# --help
-HELP='0'
-# --check
-CHECK='0'
-# --remove
+# install
+INSTALL='0'
+# remove
 REMOVE='0'
+# help
+HELP='0'
+# check
+CHECK='0'
 # --force
 FORCE='0'
-# --reinstall
-REINSTALL='0'
+# --install-user ?
+INSTALL_USER=""
+# --without-geoip
+NO_GEOIP='0'
 # --not-update-service
 N_UP_SERVICE='0'
+# --reinstall
+REINSTALL='0'
 # --version ?
 SPECIFIED_VERSION=""
 # --local ?
 LOCAL_FILE=""
 # --proxy ?
 PROXY=""
-# --install-user ?
-INSTALL_USER=""
+# --purge
+PURGE='0'
 
 curl() {
   $(type -P curl) -L -q --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
@@ -180,8 +186,23 @@ judgment_parameters() {
   local temp_version='0'
   while [[ "$#" -gt '0' ]]; do
     case "$1" in
-      '--remove')
+      'install')
+        INSTALL='1'
+        ;;
+      'remove')
         REMOVE='1'
+        ;;
+      'help')
+        HELP='1'
+        ;;
+      'check')
+        CHECK='1'
+        ;;
+      '--without-geoip')
+        NO_GEOIP='1'
+        ;;
+      '--purge')
+        PURGE='1'
         ;;
       '--version')
         if [[ -z "$2" ]]; then
@@ -192,14 +213,8 @@ judgment_parameters() {
         SPECIFIED_VERSION="$2"
         shift
         ;;
-      '-c' | '--check')
-        CHECK='1'
-        ;;
       '-f' | '--force')
         FORCE='1'
-        ;;
-      '-h' | '--help')
-        HELP='1'
         ;;
       '-l' | '--local')
         local_install='1'
@@ -239,11 +254,13 @@ judgment_parameters() {
     esac
     shift
   done
-  if ((HELP+CHECK+REMOVE>1)); then
-    echo "--help, --check and --remove can't be used together."
+  if ((INSTALL+HELP+CHECK+REMOVE==0)); then
+    INSTALL='1'
+  elif ((INSTALL+HELP+CHECK+REMOVE>1)); then
+    echo 'You can only choose one action.'
     exit 1
   fi
-  if ((temp_version+local_install+REINSTALL>1)); then
+  if [[ "$INSTALL" -eq '1' ]] && ((temp_version+local_install+REINSTALL>1)); then
     echo "--version,--reinstall and --local can't be used together."
     exit 1
   fi
@@ -396,11 +413,12 @@ install_file() {
 install_xray() {
   # Install Xray binary to /usr/local/bin/ and $DAT_PATH
   install_file xray
-  install -d "$DAT_PATH"
   # If the file exists, geoip.dat and geosite.dat will not be installed or updated
-  if [[ ! -f "${DAT_PATH}/.undat" ]]; then
+  if ([[ -f "${DAT_PATH}/geoip.dat" ]] || [[ "$NO_GEOIP" -eq '0' ]]) && [[ ! -f "${DAT_PATH}/.undat" ]]; then
+    install -d "$DAT_PATH"
     install_file geoip.dat
     install_file geosite.dat
+    GEOIP='1'
   fi
 
   # Install Xray configuration file to $JSON_PATH
@@ -559,29 +577,35 @@ remove_xray() {
     if [[ -n "$(pidof xray)" ]]; then
       stop_xray
     fi
-    if ! ("rm" -r '/usr/local/bin/xray' \
-      "$DAT_PATH" \
-      '/etc/systemd/system/xray.service' \
-      '/etc/systemd/system/xray@.service' \
-      '/etc/systemd/system/xray.service.d' \
-      '/etc/systemd/system/xray@.service.d'); then
+    local delet_files=('/usr/local/bin/xray' '/etc/systemd/system/xray.service' '/etc/systemd/system/xray@.service' '/etc/systemd/system/xray.service.d' '/etc/systemd/system/xray@.service.d')
+    [[ -d "$DAT_PATH" ]] && delet_files+=("$DAT_PATH")
+    if [[ "$PURGE" -eq '1' ]]; then
+      if [[ -z "$JSONS_PATH" ]]; then
+        delet_files+=("$JSON_PATH")
+      else
+        delet_files+=("$JSONS_PATH")
+      fi
+      delet_files+=('/var/log/xray')
+    fi
+    systemctl disable xray
+    if ! ("rm" -r "${delet_files[@]}"); then
       echo 'error: Failed to remove Xray.'
       exit 1
     else
-      echo 'removed: /usr/local/bin/xray'
-      echo "removed: $DAT_PATH"
-      echo 'removed: /etc/systemd/system/xray.service'
-      echo 'removed: /etc/systemd/system/xray@.service'
-      echo 'removed: /etc/systemd/system/xray.service.d'
-      echo 'removed: /etc/systemd/system/xray@.service.d'
-      echo 'Please execute the command: systemctl disable xray'
+      for i in ${!delet_files[@]}
+      do
+        echo "removed: ${delet_files[$i]}"
+      done
+      systemctl daemon-reload
       echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"
       echo 'info: Xray has been removed.'
-      echo 'info: If necessary, manually delete the configuration and log files.'
-      if [[ -n "$JSONS_PATH" ]]; then
-        echo "info: e.g., $JSONS_PATH and /var/log/xray/ ..."
-      else
-        echo "info: e.g., $JSON_PATH and /var/log/xray/ ..."
+      if [[ "$PURGE" -eq '0' ]]; then
+        echo 'info: If necessary, manually delete the configuration and log files.'
+        if [[ -n "$JSONS_PATH" ]]; then
+          echo "info: e.g., $JSONS_PATH and /var/log/xray/ ..."
+        else
+          echo "info: e.g., $JSON_PATH and /var/log/xray/ ..."
+        fi
       fi
       exit 0
     fi
@@ -593,18 +617,29 @@ remove_xray() {
 
 # Explanation of parameters in the script
 show_help() {
-  echo "usage: $0 [OPTION]..."
+  echo "usage: $0 [OPTION]... ACTION"
+  echo
+  echo 'ACTION:'
+  echo '  install                   Install/Update Xray'
+  echo '  remove                    Remove Xray'
+  echo '  help                      Show help'
+  echo '  check                     Check if Xray can be updated'
+  echo '  If no action is specified, then install will be selected'
+  echo
   echo 'OPTION:'
-  echo '  --remove                  Remove Xray'
-  echo '  --version                 Install the specified version of Xray, e.g., --version v1.0.0'
-  echo '  -c, --check               Check if Xray can be updated'
-  echo '  -f, --force               Force installation of the latest version of Xray'
-  echo '  -h, --help                Show help'
-  echo '  -l, --local               Install Xray from a local file'
-  echo '  -p, --proxy               Download through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
-  echo '  -u, --install-user        Install Xray in specified user, e.g, -u root'
-  echo '  --reinstall               Reinstall current Xray version'
-  echo "  --not-update-service      Don't change service file if it is exist"
+  echo '  install:'
+  echo '    --version                 Install the specified version of Xray, e.g., --version v1.0.0'
+  echo '    -f, --force               Force install even though the versions are same'
+  echo '    -l, --local               Install Xray from a local file'
+  echo '    -p, --proxy               Download through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
+  echo '    -u, --install-user        Install Xray in specified user, e.g, -u root'
+  echo '    --reinstall               Reinstall current Xray version'
+  echo "    --not-update-service      Don't change service files if they are exist"
+  echo "    --without-geoip           Don't install geoip files if they are not exist"
+  echo '  remove:'
+  echo '    --purge                   Remove all the Xray files, include logs, configs, etc'
+  echo '  check:'
+  echo '    -p, --proxy               Check new version through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
   exit 0
 }
 
@@ -689,7 +724,7 @@ main() {
   ([[ "$N_UP_SERVICE" -eq '1' ]] && [[ -f '/etc/systemd/system/xray.service' ]]) || install_startup_service_file
   echo 'installed: /usr/local/bin/xray'
   # If the file exists, the content output of installing or updating geoip.dat and geosite.dat will not be displayed
-  if [[ ! -f "${DAT_PATH}/.undat" ]]; then
+  if [[ "$GEOIP" -eq '1' ]]; then
     echo "installed: ${DAT_PATH}/geoip.dat"
     echo "installed: ${DAT_PATH}/geosite.dat"
   fi
@@ -725,7 +760,12 @@ main() {
   if [[ "$XRAY_RUNNING" -eq '1' ]]; then
     start_xray
   else
-    echo 'Please execute the command: systemctl enable xray; systemctl start xray'
+    systemctl enable xray && systemctl start xray
+    if [[ "$?" -eq 0 ]]; then
+      echo "info: Enable and start the Xray service"
+    else
+      echo "warning: Failed to enable and start the Xray service"
+    fi
   fi
 }
 
