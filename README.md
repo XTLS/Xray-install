@@ -20,20 +20,44 @@ installed: /etc/systemd/system/xray@.service
 
 ## Usage
 
-### Install & Upgrade Xray-core and .dat files
+### Install & Upgrade Xray-core
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)
+# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) install
 ```
 
-### Update geoip.dat and geosite.dat only
+### Install & Upgrade Xray-core with user root
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-dat-release.sh)
+# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) -u root install
+```
+
+### Install & Upgrade Xray-core without .dat files
+
+```
+# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) --without-geodata install
+```
+
+### Install & Update geoip.dat and geosite.dat only
+
+```
+# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) install-geodata
+```
+
+### Remove Xray
+
+```
+# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) --purge remove
 ```
 
 ### Remove Xray, except json and logs
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) --remove
+# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) remove
+```
+
+### More useages
+
+```
+# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) help
 ```
