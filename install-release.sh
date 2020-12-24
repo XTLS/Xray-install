@@ -35,8 +35,8 @@ RELEASE_LATEST=""
 INSTALL_VERSION=""
 # install
 INSTALL='0'
-# install-geoip
-INSTALL_GEOIP='0'
+# install-geodata
+INSTALL_GEODATA='0'
 # remove
 REMOVE='0'
 # help
@@ -47,8 +47,8 @@ CHECK='0'
 FORCE='0'
 # --install-user ?
 INSTALL_USER=""
-# --without-geoip
-NO_GEOIP='0'
+# --without-geodata
+NO_GEODATA='0'
 # --not-update-service
 N_UP_SERVICE='0'
 # --reinstall
@@ -191,8 +191,8 @@ judgment_parameters() {
       'install')
         INSTALL='1'
         ;;
-      'install-geoip')
-        INSTALL_GEOIP='1'
+      'install-geodata')
+        INSTALL_GEODATA='1'
         ;;
       'remove' | '--remove')
         REMOVE='1'
@@ -203,8 +203,8 @@ judgment_parameters() {
       'check')
         CHECK='1'
         ;;
-      '--without-geoip')
-        NO_GEOIP='1'
+      '--without-geodata')
+        NO_GEODATA='1'
         ;;
       '--purge')
         PURGE='1'
@@ -259,9 +259,9 @@ judgment_parameters() {
     esac
     shift
   done
-  if ((INSTALL+INSTALL_GEOIP+HELP+CHECK+REMOVE==0)); then
+  if ((INSTALL+INSTALL_GEODATA+HELP+CHECK+REMOVE==0)); then
     INSTALL='1'
-  elif ((INSTALL+INSTALL_GEOIP+HELP+CHECK+REMOVE>1)); then
+  elif ((INSTALL+INSTALL_GEODATA+HELP+CHECK+REMOVE>1)); then
     echo 'You can only choose one action.'
     exit 1
   fi
@@ -419,11 +419,11 @@ install_xray() {
   # Install Xray binary to /usr/local/bin/ and $DAT_PATH
   install_file xray
   # If the file exists, geoip.dat and geosite.dat will not be installed or updated
-  if [[ "$NO_GEOIP" -eq '0' ]] && [[ ! -f "${DAT_PATH}/.undat" ]]; then
+  if [[ "$NO_GEODATA" -eq '0' ]] && [[ ! -f "${DAT_PATH}/.undat" ]]; then
     install -d "$DAT_PATH"
     install_file geoip.dat
     install_file geosite.dat
-    GEOIP='1'
+    GEODATA='1'
   fi
 
   # Install Xray configuration file to $JSON_PATH
@@ -559,8 +559,8 @@ stop_xray() {
   echo 'info: Stop the Xray service.'
 }
 
-install_geoip() {
-  download_geoip_files() {
+install_geodata() {
+  download_geodata() {
     if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}" "${1}"; then
       echo 'error: Download failed! Please check your network or try again.'
       exit 1
@@ -577,8 +577,8 @@ install_geoip() {
   local file_site='geosite.dat'
   local dir_tmp="$(mktemp -d)"
   [[ ! -f '/usr/local/bin/xray' ]] && echo "warning: Xray was not installed"
-  download_geoip_files $download_link_geoip $file_ip
-  download_geoip_files $download_link_geosite $file_dlc
+  download_geodata $download_link_geoip $file_ip
+  download_geodata $download_link_geosite $file_dlc
   cd "${dir_tmp}" || exit
   for i in "${dir_tmp}"/*.sha256sum; do
     if ! sha256sum -c "${i}"; then
@@ -661,7 +661,7 @@ show_help() {
   echo
   echo 'ACTION:'
   echo '  install                   Install/Update Xray'
-  echo '  install-geoip             Install/Update geoip files only'
+  echo '  install-geodata           Install/Update geoip.dat and geosite.dat only'
   echo '  remove                    Remove Xray'
   echo '  help                      Show help'
   echo '  check                     Check if Xray can be updated'
@@ -676,8 +676,8 @@ show_help() {
   echo '    -u, --install-user        Install Xray in specified user, e.g, -u root'
   echo '    --reinstall               Reinstall current Xray version'
   echo "    --not-update-service      Don't change service files if they are exist"
-  echo "    --without-geoip           Don't install/update geoip files"
-  echo '  install-geoip:'
+  echo "    --without-geodata         Don't install/update geoip.dat and geosite.dat"
+  echo '  install-geodata:'
   echo '    -p, --proxy               Download through a proxy server'
   echo '  remove:'
   echo '    --purge                   Remove all the Xray files, include logs, configs, etc'
@@ -701,7 +701,7 @@ main() {
   [[ "$HELP" -eq '1' ]] && show_help
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_xray
-  [[ "$INSTALL_GEOIP" -eq '1' ]] && install_geoip
+  [[ "$INSTALL_GEODATA" -eq '1' ]] && install_geodata
 
   # Check if the user is effective
   check_install_user
@@ -768,7 +768,7 @@ main() {
   ([[ "$N_UP_SERVICE" -eq '1' ]] && [[ -f '/etc/systemd/system/xray.service' ]]) || install_startup_service_file
   echo 'installed: /usr/local/bin/xray'
   # If the file exists, the content output of installing or updating geoip.dat and geosite.dat will not be displayed
-  if [[ "$GEOIP" -eq '1' ]]; then
+  if [[ "$GEODATA" -eq '1' ]]; then
     echo "installed: ${DAT_PATH}/geoip.dat"
     echo "installed: ${DAT_PATH}/geosite.dat"
   fi
