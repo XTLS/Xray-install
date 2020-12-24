@@ -414,7 +414,7 @@ install_xray() {
   # Install Xray binary to /usr/local/bin/ and $DAT_PATH
   install_file xray
   # If the file exists, geoip.dat and geosite.dat will not be installed or updated
-  if ([[ -f "${DAT_PATH}/geoip.dat" ]] || [[ "$NO_GEOIP" -eq '0' ]]) && [[ ! -f "${DAT_PATH}/.undat" ]]; then
+  if [[ "$NO_GEOIP" -eq '0' ]] && [[ ! -f "${DAT_PATH}/.undat" ]]; then
     install -d "$DAT_PATH"
     install_file geoip.dat
     install_file geosite.dat
@@ -635,7 +635,7 @@ show_help() {
   echo '    -u, --install-user        Install Xray in specified user, e.g, -u root'
   echo '    --reinstall               Reinstall current Xray version'
   echo "    --not-update-service      Don't change service files if they are exist"
-  echo "    --without-geoip           Don't install geoip files if they are not exist"
+  echo "    --without-geoip           Don't install/update geoip files"
   echo '  remove:'
   echo '    --purge                   Remove all the Xray files, include logs, configs, etc'
   echo '  check:'
