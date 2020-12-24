@@ -194,7 +194,7 @@ judgment_parameters() {
       'install-geoip')
         INSTALL_GEOIP='1'
         ;;
-      'remove')
+      'remove' | '--remove')
         REMOVE='1'
         ;;
       'help')
