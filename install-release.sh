@@ -35,6 +35,8 @@ RELEASE_LATEST=""
 INSTALL_VERSION=""
 # install
 INSTALL='0'
+# install-geoip
+INSTALL_GEOIP='0'
 # remove
 REMOVE='0'
 # help
@@ -189,6 +191,9 @@ judgment_parameters() {
       'install')
         INSTALL='1'
         ;;
+      'install-geoip')
+        INSTALL_GEOIP='1'
+        ;;
       'remove')
         REMOVE='1'
         ;;
@@ -254,9 +259,9 @@ judgment_parameters() {
     esac
     shift
   done
-  if ((INSTALL+HELP+CHECK+REMOVE==0)); then
+  if ((INSTALL+INSTALL_GEOIP+HELP+CHECK+REMOVE==0)); then
     INSTALL='1'
-  elif ((INSTALL+HELP+CHECK+REMOVE>1)); then
+  elif ((INSTALL+INSTALL_GEOIP+HELP+CHECK+REMOVE>1)); then
     echo 'You can only choose one action.'
     exit 1
   fi
@@ -554,6 +559,41 @@ stop_xray() {
   echo 'info: Stop the Xray service.'
 }
 
+install_geoip() {
+  download_geoip_files() {
+    if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}" "${1}"; then
+      echo 'error: Download failed! Please check your network or try again.'
+      exit 1
+    fi
+    if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}.sha256sum" "${1}.sha256sum"; then
+      echo 'error: Download failed! Please check your network or try again.'
+      exit 1
+    fi
+  }
+  local download_link_geoip="https://github.com/v2fly/geoip/releases/latest/download/geoip.dat"
+  local download_link_geosite="https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat"
+  local file_ip='geoip.dat'
+  local file_dlc='dlc.dat'
+  local file_site='geosite.dat'
+  local dir_tmp="$(mktemp -d)"
+  [[ ! -f '/usr/local/bin/xray' ]] && echo "warning: Xray was not installed"
+  download_geoip_files $download_link_geoip $file_ip
+  download_geoip_files $download_link_geosite $file_dlc
+  cd "${dir_tmp}" || exit
+  for i in "${dir_tmp}"/*.sha256sum; do
+    if ! sha256sum -c "${i}"; then
+      echo 'error: Check failed! Please check your network or try again.'
+      exit 1
+    fi
+  done
+  cd - > /dev/null
+  install -d "$DAT_PATH"
+  install -m 644 "${dir_tmp}"/${file_dlc} "${DAT_PATH}"/${file_site}
+  install -m 644 "${dir_tmp}"/${file_ip} "${DAT_PATH}"/${file_ip}
+  rm -r "${dir_tmp}"
+  exit 0
+}
+
 check_update() {
   if [[ -f '/etc/systemd/system/xray.service' ]]; then
     get_current_version
@@ -621,10 +661,11 @@ show_help() {
   echo
   echo 'ACTION:'
   echo '  install                   Install/Update Xray'
+  echo '  install-geoip             Install/Update geoip files only'
   echo '  remove                    Remove Xray'
   echo '  help                      Show help'
   echo '  check                     Check if Xray can be updated'
-  echo '  If no action is specified, then install will be selected'
+  echo 'If no action is specified, then install will be selected'
   echo
   echo 'OPTION:'
   echo '  install:'
@@ -636,10 +677,12 @@ show_help() {
   echo '    --reinstall               Reinstall current Xray version'
   echo "    --not-update-service      Don't change service files if they are exist"
   echo "    --without-geoip           Don't install/update geoip files"
+  echo '  install-geoip:'
+  echo '    -p, --proxy               Download through a proxy server'
   echo '  remove:'
   echo '    --purge                   Remove all the Xray files, include logs, configs, etc'
   echo '  check:'
-  echo '    -p, --proxy               Check new version through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
+  echo '    -p, --proxy               Check new version through a proxy server'
   exit 0
 }
 
@@ -658,6 +701,7 @@ main() {
   [[ "$HELP" -eq '1' ]] && show_help
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_xray
+  [[ "$INSTALL_GEOIP" -eq '1' ]] && install_geoip
 
   # Check if the user is effective
   check_install_user
