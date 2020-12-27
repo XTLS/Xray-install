@@ -45,6 +45,8 @@ HELP='0'
 CHECK='0'
 # --force
 FORCE='0'
+# --beta
+BETA='0'
 # --install-user ?
 INSTALL_USER=""
 # --without-geodata
@@ -221,6 +223,9 @@ judgment_parameters() {
       '-f' | '--force')
         FORCE='1'
         ;;
+      '--beta')
+        BETA='1'
+        ;;
       '-l' | '--local')
         local_install='1'
         if [[ -z "$2" ]]; then
@@ -265,8 +270,8 @@ judgment_parameters() {
     echo 'You can only choose one action.'
     exit 1
   fi
-  if [[ "$INSTALL" -eq '1' ]] && ((temp_version+local_install+REINSTALL>1)); then
-    echo "--version,--reinstall and --local can't be used together."
+  if [[ "$INSTALL" -eq '1' ]] && ((temp_version+local_install+REINSTALL+BETA>1)); then
+    echo "--version,--reinstall,--beta and --local can't be used together."
     exit 1
   fi
 }
@@ -322,12 +327,41 @@ get_latest_version() {
   fi
   RELEASE_LATEST="$(sed 'y/,/\n/' "$TMP_FILE" | grep 'tag_name' | awk -F '"' '{print $4}')"
   if [[ -z "$RELEASE_LATEST" ]]; then
+    if grep -q "API rate limit exceeded" "$TMP_FILE"; then
+      echo "error: github API rate limit exceeded"
+    else
+      echo "error: Failed to get the latest release version."
+      echo "Welcome bug report:https://github.com/XTLS/Xray-install/issues"
+    fi
     "rm" "$TMP_FILE"
-    echo "error: Failed to get the latest release version"
     exit 1
   fi
   "rm" "$TMP_FILE"
   RELEASE_LATEST="v${RELEASE_LATEST#v}"
+  if ! curl -x "${PROXY}" -sS -H "Accept: application/vnd.github.v3+json" -o "$TMP_FILE" 'https://api.github.com/repos/XTLS/Xray-core/releases'; then
+    "rm" "$TMP_FILE"
+    echo 'error: Failed to get release list, please check your network.'
+    exit 1
+  fi
+  local releases_list=($(sed 'y/,/\n/' "$TMP_FILE" | grep 'tag_name' | awk -F '"' '{print $4}'))
+  if [[ -z "${releases_list[@]}" ]]; then
+    if grep -q "API rate limit exceeded" "$TMP_FILE"; then
+      echo "error: github API rate limit exceeded"
+    else
+      echo "error: Failed to get the latest release version."
+      echo "Welcome bug report:https://github.com/XTLS/Xray-install/issues"
+    fi
+    "rm" "$TMP_FILE"
+    exit 1
+  fi
+  local i
+  for i in ${!releases_list[@]}
+  do
+    releases_list[$i]="v${releases_list[$i]#v}"
+    grep -q "https://github.com/XTLS/Xray-core/releases/download/${releases_list[$i]}/Xray-linux-$MACHINE.zip" "$TMP_FILE" && break
+  done
+  "rm" "$TMP_FILE"
+  PRE_RELEASE_LATEST="${releases_list[$i]}"
 }
 
 version_gt() {
@@ -597,19 +631,14 @@ install_geodata() {
 check_update() {
   if [[ -f '/etc/systemd/system/xray.service' ]]; then
     get_current_version
-    get_latest_version
-    version_gt $RELEASE_LATEST $CURRENT_VERSION
-    local get_ver_exit_code=$?
-    if [[ "$get_ver_exit_code" -eq '0' ]]; then
-      echo "info: Found the latest release of Xray $RELEASE_LATEST . (Current release: $CURRENT_VERSION)"
-    elif [[ "$get_ver_exit_code" -eq '1' ]]; then
-      echo "info: No new version. The current version of Xray is $CURRENT_VERSION ."
-    fi
-    exit 0
+    echo "info: The current version of Xray is $CURRENT_VERSION ."
   else
-    echo 'error: Xray is not installed.'
-    exit 1
+    echo 'warning: Xray is not installed.'
   fi
+  get_latest_version
+  echo "info: The latest release version of Xray is $RELEASE_LATEST ."
+  echo "info: The latest pre-release/release version of Xray is $PRE_RELEASE_LATEST ."
+  exit 0
 }
 
 remove_xray() {
@@ -657,7 +686,7 @@ remove_xray() {
 
 # Explanation of parameters in the script
 show_help() {
-  echo "usage: $0 [OPTION]... ACTION"
+  echo "usage: $0 ACTION [OPTION]..."
   echo
   echo 'ACTION:'
   echo '  install                   Install/Update Xray'
@@ -671,6 +700,7 @@ show_help() {
   echo '  install:'
   echo '    --version                 Install the specified version of Xray, e.g., --version v1.0.0'
   echo '    -f, --force               Force install even though the versions are same'
+  echo '    --beta                    Install the pre-release version if it is exist'
   echo '    -l, --local               Install Xray from a local file'
   echo '    -p, --proxy               Download through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
   echo '    -u, --install-user        Install Xray in specified user, e.g, -u root'
@@ -737,13 +767,17 @@ main() {
     else
       install_software 'curl' 'curl'
       get_latest_version
-      version_gt $RELEASE_LATEST $CURRENT_VERSION
+      if [[ "$BETA" -eq '0' ]]; then
+        INSTALL_VERSION="$RELEASE_LATEST"
+      else
+        INSTALL_VERSION="$PRE_RELEASE_LATEST"
+      fi
+      version_gt $INSTALL_VERSION $CURRENT_VERSION
       local temp_number=$?
       if [[ "$temp_number" -eq '1' ]] && [[ "$FORCE" -eq '0' ]]; then
         echo "info: No new version. The current version of Xray is $CURRENT_VERSION ."
         exit 0
       fi
-      INSTALL_VERSION=$RELEASE_LATEST
       echo "info: Installing Xray $INSTALL_VERSION for $(uname -m)"
     fi
     install_software 'curl' 'curl'
@@ -804,7 +838,7 @@ main() {
   if [[ "$XRAY_RUNNING" -eq '1' ]]; then
     start_xray
   else
-    systemctl enable xray --now
+    systemctl --now enable xray
     if [[ "$?" -eq 0 ]]; then
       echo "info: Enable and start the Xray service"
     else
