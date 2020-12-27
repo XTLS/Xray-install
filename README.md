@@ -29,13 +29,13 @@ installed: /etc/systemd/system/xray@.service
 ### Install & Upgrade Xray-core with user root
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) -u root install
+# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) install -u root
 ```
 
 ### Install & Upgrade Xray-core without .dat files
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) --without-geodata install
+# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) install --without-geodata
 ```
 
 ### Install & Update geoip.dat and geosite.dat only
@@ -47,7 +47,7 @@ installed: /etc/systemd/system/xray@.service
 ### Remove Xray
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) --purge remove
+# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) remove --purge
 ```
 
 ### Remove Xray, except json and logs
