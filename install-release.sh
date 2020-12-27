@@ -675,7 +675,7 @@ remove_xray() {
 
 # Explanation of parameters in the script
 show_help() {
-  echo "usage: $0 [OPTION]... ACTION"
+  echo "usage: $0 [OPTION]... ACTION [OPTION]..."
   echo
   echo 'ACTION:'
   echo '  install                   Install/Update Xray'
