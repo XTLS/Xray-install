@@ -326,11 +326,17 @@ get_latest_version() {
     exit 1
   fi
   RELEASE_LATEST="$(sed 'y/,/\n/' "$TMP_FILE" | grep 'tag_name' | awk -F '"' '{print $4}')"
-  "rm" "$TMP_FILE"
   if [[ -z "$RELEASE_LATEST" ]]; then
-    echo "error: Failed to get the latest release version"
+    if grep -q "API rate limit exceeded" "$TMP_FILE"; then
+      echo "error: github API rate limit exceeded"
+    else
+      echo "error: Failed to get the latest release version."
+      echo "Welcome bug report:https://github.com/XTLS/Xray-install/issues"
+    fi
+    "rm" "$TMP_FILE"
     exit 1
   fi
+  "rm" "$TMP_FILE"
   RELEASE_LATEST="v${RELEASE_LATEST#v}"
   if ! curl -x "${PROXY}" -sS -H "Accept: application/vnd.github.v3+json" -o "$TMP_FILE" 'https://api.github.com/repos/XTLS/Xray-core/releases'; then
     "rm" "$TMP_FILE"
@@ -339,8 +345,13 @@ get_latest_version() {
   fi
   local releases_list=($(sed 'y/,/\n/' "$TMP_FILE" | grep 'tag_name' | awk -F '"' '{print $4}'))
   if [[ -z "${releases_list[@]}" ]]; then
+    if grep -q "API rate limit exceeded" "$TMP_FILE"; then
+      echo "error: github API rate limit exceeded"
+    else
+      echo "error: Failed to get the latest release version."
+      echo "Welcome bug report:https://github.com/XTLS/Xray-install/issues"
+    fi
     "rm" "$TMP_FILE"
-    echo "error: Failed to get the latest release version"
     exit 1
   fi
   local i
@@ -756,20 +767,16 @@ main() {
     else
       install_software 'curl' 'curl'
       get_latest_version
-      if [[ "$BETA" -eq 0 ]]; then
-          version_gt $RELEASE_LATEST $CURRENT_VERSION
-      else
-          version_gt $PRE_RELEASE_LATEST $CURRENT_VERSION
-      fi
-      local temp_number=$?
-      if [[ "$temp_number" -eq '1' ]] && [[ "$FORCE" -eq '0' ]]; then
-        echo "info: No new version. The current version of Xray is $CURRENT_VERSION ."
-        exit 0
-      fi
       if [[ "$BETA" -eq '0' ]]; then
         INSTALL_VERSION="$RELEASE_LATEST"
       else
         INSTALL_VERSION="$PRE_RELEASE_LATEST"
+      fi
+      version_gt $INSTALL_VERSION $CURRENT_VERSION
+      local temp_number=$?
+      if [[ "$temp_number" -eq '1' ]] && [[ "$FORCE" -eq '0' ]]; then
+        echo "info: No new version. The current version of Xray is $CURRENT_VERSION ."
+        exit 0
       fi
       echo "info: Installing Xray $INSTALL_VERSION for $(uname -m)"
     fi
