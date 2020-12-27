@@ -766,7 +766,11 @@ main() {
         echo "info: No new version. The current version of Xray is $CURRENT_VERSION ."
         exit 0
       fi
-      ([[ "$BETA" -eq 0 ]] && INSTALL_VERSION=$RELEASE_LATEST) || INSTALL_VERSION=$PRE_RELEASE_LATEST
+      if [[ "$BETA" -eq '0' ]]; then
+        INSTALL_VERSION="$RELEASE_LATEST"
+      else
+        INSTALL_VERSION="$PRE_RELEASE_LATEST"
+      fi
       echo "info: Installing Xray $INSTALL_VERSION for $(uname -m)"
     fi
     install_software 'curl' 'curl'
