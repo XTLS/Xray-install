@@ -18,46 +18,48 @@ installed: /etc/systemd/system/xray.service
 installed: /etc/systemd/system/xray@.service
 ```
 
-## Usage
+## Basic Usage
 
-### Install & Upgrade Xray-core
-
-```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) install
-```
-
-### Install & Upgrade Xray-core with user root
+**Install & Upgrade Xray-core and geodata with User nobody, but will NOT overwrite User in existing service files**
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) install -u root
+# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) install
 ```
 
-### Install & Upgrade Xray-core without .dat files
+**Update geoip.dat and geosite.dat only**
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) install --without-geodata
+# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) install-geodata
 ```
 
-### Install & Update geoip.dat and geosite.dat only
+**Remove Xray, except json and logs**
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) install-geodata
+# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) remove
 ```
 
-### Remove Xray
+## Advance
+
+**Install & Upgrade Xray-core and geodata with User root, which will overwrite User in existing service files**
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) remove --purge
+# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) install -u root
 ```
 
-### Remove Xray, except json and logs
+**Install & Upgrade Xray-core without geodata**
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) remove
+# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) install --without-geodata
 ```
 
-### More useages
+**Remove Xray, include json and logs**
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) help
+# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) remove --purge
+```
+
+## More Usage
+
+```
+# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) help
 ```
