@@ -5,10 +5,48 @@ set -euxo pipefail
 # Identify architecture
 case "$(arch -s)" in
     'i386' | 'i686')
-        BIT='32'
+        MACHINE='32'
         ;;
     'amd64' | 'x86_64')
-        BIT='64'
+        MACHINE='64'
+        ;;
+    'armv5tel')
+        MACHINE='arm32-v5'
+        ;;
+    'armv6l')
+        MACHINE='arm32-v6'
+        grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+        ;;
+    'armv7' | 'armv7l')
+        MACHINE='arm32-v7a'
+        grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+        ;;
+    'armv8' | 'aarch64')
+        MACHINE='arm64-v8a'
+        ;;
+    'mips')
+        MACHINE='mips32'
+        ;;
+    'mipsle')
+        MACHINE='mips32le'
+        ;;
+    'mips64')
+        MACHINE='mips64'
+        ;;
+    'mips64le')
+        MACHINE='mips64le'
+        ;;
+    'ppc64')
+        MACHINE='ppc64'
+        ;;
+    'ppc64le')
+        MACHINE='ppc64le'
+        ;;
+    'riscv64')
+        MACHINE='riscv64'
+        ;;
+    's390x')
+        MACHINE='s390x'
         ;;
     *)
         echo "error: The architecture is not supported."
@@ -17,8 +55,8 @@ case "$(arch -s)" in
 esac
 
 TMP_DIRECTORY="$(mktemp -d)/"
-ZIP_FILE="${TMP_DIRECTORY}v2ray-linux-$BIT.zip"
-DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-$BIT.zip"
+ZIP_FILE="${TMP_DIRECTORY}v2ray-linux-$MACHINE.zip"
+DOWNLOAD_LINK="https://github.com/v2fly/v2ray-core/releases/latest/download/v2ray-linux-$MACHINE.zip"
 
 install_software() {
     if [[ -n "$(command -v curl)" ]]; then
@@ -51,7 +89,7 @@ download_v2ray() {
 verification_v2ray() {
     for LISTSUM in 'md5' 'sha1' 'sha256' 'sha512'; do
         SUM="$(${LISTSUM}sum $ZIP_FILE | sed 's/ .*//')"
-        CHECKSUM="$(grep $(echo $LISTSUM | tr [:lower:] [:upper:]) $ZIP_FILE.dgst | sed 's/.* //')"
+        CHECKSUM="$(grep $(echo $LISTSUM | tr [:lower:] [:upper:]) $ZIP_FILE.dgst | uniq | sed 's/.* //')"
         if [ "$SUM" != "$CHECKSUM" ]; then
             echo 'error: Check failed! Please check your network or try again.'
             exit 1
