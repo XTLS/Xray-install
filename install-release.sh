@@ -491,6 +491,14 @@ install_xray() {
 install_startup_service_file() {
   mkdir -p '/etc/systemd/system/xray.service.d'
   mkdir -p '/etc/systemd/system/xray@.service.d/'
+  local temp_CapabilityBoundingSet="CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
+  local temp_AmbientCapabilities="AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
+  local temp_NoNewPrivileges="NoNewPrivileges=true"
+  if [[ "$INSTALL_USER_UID" -eq '0' ]]; then
+    temp_CapabilityBoundingSet="#${temp_CapabilityBoundingSet}"
+    temp_AmbientCapabilities="#${temp_AmbientCapabilities}"
+    temp_NoNewPrivileges="#${temp_NoNewPrivileges}"
+  fi
 cat > /etc/systemd/system/xray.service << EOF
 [Unit]
 Description=Xray Service
@@ -499,9 +507,9 @@ After=network.target nss-lookup.target
 
 [Service]
 User=$INSTALL_USER
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-NoNewPrivileges=true
+${temp_CapabilityBoundingSet}
+${temp_AmbientCapabilities}
+${temp_NoNewPrivileges}
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
 Restart=on-failure
 RestartPreventExitStatus=23
@@ -519,9 +527,9 @@ After=network.target nss-lookup.target
 
 [Service]
 User=$INSTALL_USER
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-NoNewPrivileges=true
+${temp_CapabilityBoundingSet}
+${temp_AmbientCapabilities}
+${temp_NoNewPrivileges}
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/%i.json
 Restart=on-failure
 RestartPreventExitStatus=23
