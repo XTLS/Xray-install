@@ -61,5 +61,5 @@ installed: /etc/systemd/system/xray@.service
 ## More Usage
 
 ```
-# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) help
+# bash -s -- help < <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)
 ```
