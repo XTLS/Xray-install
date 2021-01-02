@@ -23,19 +23,19 @@ installed: /etc/systemd/system/xray@.service
 **Install & Upgrade Xray-core and geodata with User nobody, but will NOT overwrite User in existing service files**
 
 ```
-# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) install
+# bash -s -- install < <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)
 ```
 
 **Update geoip.dat and geosite.dat only**
 
 ```
-# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) install-geodata
+# bash -s -- install-geodata < <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)
 ```
 
 **Remove Xray, except json and logs**
 
 ```
-# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) remove
+# bash -s -- remove < <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)
 ```
 
 ## Advance
@@ -43,19 +43,19 @@ installed: /etc/systemd/system/xray@.service
 **Install & Upgrade Xray-core and geodata with User root, which will overwrite User in existing service files**
 
 ```
-# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) install -u root
+# bash -s -- install -u root < <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)
 ```
 
 **Install & Upgrade Xray-core without geodata**
 
 ```
-# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) install --without-geodata
+# bash -s -- install --without-geodata < <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)
 ```
 
 **Remove Xray, include json and logs**
 
 ```
-# bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) remove --purge
+# bash -s -- remove --purge < <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)
 ```
 
 ## More Usage
