@@ -63,3 +63,7 @@ installed: /etc/systemd/system/xray@.service
 ```
 # bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ help
 ```
+
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/XTLS/Xray-install.svg)](https://starchart.cc/XTLS/Xray-install)
