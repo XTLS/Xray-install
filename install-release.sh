@@ -375,7 +375,7 @@ get_latest_version() {
   fi
   local releases_list
   releases_list=($(sed 'y/,/\n/' "$tmp_file" | grep 'tag_name' | awk -F '"' '{print $4}'))
-  if [[ "${#releases_list[@]}" -eq 0 ]]; then
+  if [[ "${#releases_list[@]}" -eq '0' ]]; then
     if grep -q "API rate limit exceeded" "$tmp_file"; then
       echo "error: github API rate limit exceeded"
     else
