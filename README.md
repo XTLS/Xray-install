@@ -70,4 +70,4 @@ installed: /etc/systemd/system/xray@.service
 
 ## About logs
 
-Xray will not use `/var/log/xray/*` defaultly. You can specify the log files in Xray's config to use `/var/log/xray/*`, or install with `--without-logfiles` to avoid installing the log files.
+Xray will not use `/var/log/xray/*` by default. You can specify the log files in Xray's config to use `/var/log/xray/*`, or install with `--without-logfiles` to avoid installing the log files.
