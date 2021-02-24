@@ -22,7 +22,7 @@ Notice: Xray will NOT log to `/var/log/xray/*.log` by default. Configure `"log"`
 
 ## Basic Usage
 
-**Install & Upgrade Xray-core and geodata with User nobody, but will NOT overwrite User in existing service files**
+**Install & Upgrade Xray-core and geodata with `User=nobody`, but will NOT overwrite `User` in existing service files**
 
 ```
 # bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -42,7 +42,7 @@ Notice: Xray will NOT log to `/var/log/xray/*.log` by default. Configure `"log"`
 
 ## Advance
 
-**Install & Upgrade Xray-core and geodata with User root, which will overwrite User in existing service files**
+**Install & Upgrade Xray-core and geodata with `User=root`, which will overwrite `User` in existing service files**
 
 ```
 # bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u root
