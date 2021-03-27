@@ -28,6 +28,12 @@ JSON_PATH=${JSON_PATH:-/usr/local/etc/xray}
 
 # Gobal verbals
 
+if [[ -f '/etc/systemd/system/xray.service' ]] && [[ -f '/usr/local/bin/xray' ]]; then
+  XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT=1
+else
+  XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT=0
+fi
+
 # Xray current version
 CURRENT_VERSION=''
 
@@ -660,7 +666,7 @@ install_geodata() {
   local file_site='geosite.dat'
   local dir_tmp
   dir_tmp="$(mktemp -d)"
-  [[ ! -f '/usr/local/bin/xray' ]] && echo "warning: Xray was not installed"
+  [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '0' ]] && echo "warning: Xray was not installed"
   download_geodata $download_link_geoip $file_ip
   download_geodata $download_link_geosite $file_dlc
   cd "${dir_tmp}" || exit
@@ -679,7 +685,7 @@ install_geodata() {
 }
 
 check_update() {
-  if [[ -f '/etc/systemd/system/xray.service' ]]; then
+  if [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '1' ]]; then
     get_current_version
     echo "info: The current version of Xray is $CURRENT_VERSION ."
   else
@@ -883,10 +889,11 @@ main() {
   get_current_version
   echo "info: Xray $CURRENT_VERSION is installed."
   echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"
-  if [[ "$XRAY_RUNNING" -eq '1' ]]; then
-    start_xray
+  if [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '1' ]] && [[ "$FORCE" -eq '0' ]] && [[ "$REINSTALL" -eq '0' ]]; then
+    [[ "$XRAY_RUNNING" -eq '1' ]] && start_xray
   else
-    systemctl --now enable xray
+    systemctl start xray
+    systemctl enable xray
     sleep 1s
     if systemctl -q is-active xray; then
       echo "info: Enable and start the Xray service"
