@@ -1,54 +1,55 @@
 # alpinelinux-install-xray
 
-English | [中文(中国)](README_zh-cn.md) | [中文(薹灣)](README_zh-tw.md)
+[English](README.md) | 中文(中国) | [中文(薹灣)](README_zh-tw.md)
 
-## Install dependencies
 
-### Install cURL
+## 依赖软件
+
+### 安装 cURL
 
 ```
 # apk add curl
 ```
 
-## Download
+## 下载
 
 ```
 $ curl -O https://raw.githubusercontent.com/XTLS/alpinelinux-install-xray/main/install-release.sh
 ```
 
-## Use
+## 使用
 
 ```
 # ash install-release.sh
 ```
 
-## Commands
+## 管理命令
 
-### Enable
+### 启用
 
 ```
 # rc-update add xray
 ```
 
-### Disable
+### 禁用
 
 ```
 # rc-update del xray
 ```
 
-### Start
+### 启动
 
 ```
 # rc-service xray start
 ```
 
-### Stop
+### 关闭
 
 ```
 # rc-service xray stop
 ```
 
-### Restart
+### 重启
 
 ```
 # rc-service xray restart
