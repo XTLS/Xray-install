@@ -1,4 +1,4 @@
-# alpinelinux-install-v2ray
+# alpinelinux-install-xray
 
 ## 依賴軟體
 
@@ -11,7 +11,7 @@
 ## 下載
 
 ```
-$ curl -O https://raw.githubusercontent.com/v2fly/alpinelinux-install-v2ray/master/install-release.sh
+$ curl -O https://raw.githubusercontent.com/XTLS/alpinelinux-install-xray/main/install-release.sh
 ```
 
 ## 使用
@@ -25,29 +25,29 @@ $ curl -O https://raw.githubusercontent.com/v2fly/alpinelinux-install-v2ray/mast
 ### 啟用
 
 ```
-# rc-update add v2ray
+# rc-update add xray
 ```
 
 ### 禁用
 
 ```
-# rc-update del v2ray
+# rc-update del xray
 ```
 
 ### 啟動
 
 ```
-# rc-service v2ray start
+# rc-service xray start
 ```
 
 ### 關閉
 
 ```
-# rc-service v2ray stop
+# rc-service xray stop
 ```
 
 ### 重啟
 
 ```
-# rc-service v2ray restart
+# rc-service xray restart
 ```

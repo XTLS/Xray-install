@@ -1,17 +1,17 @@
 #!/sbin/openrc-run
 
-name="V2Ray"
-description="A platform for building proxies to bypass network restrictions"
+name="Xray"
+description="The best v2ray-core, with XTLS support"
 description_checkconfig="Test configuration file"
 
-: ${env:="V2RAY_LOCATION_ASSET=/usr/local/lib/v2ray/"}
-: ${confdir:="/usr/local/etc/v2ray/"}
+: ${env:="XRAY_LOCATION_ASSET=/usr/local/lib/xray/"}
+: ${confdir:="/usr/local/etc/xray/"}
 
-command="/usr/local/bin/v2ray"
-command_args="-confdir $confdir"
+command="/usr/local/bin/xray"
+command_args="run -confdir $confdir"
 command_user="nobody"
 
-pidfile="/run/v2ray.pid"
+pidfile="/run/xray.pid"
 command_background="yes"
 
 extra_commands="checkconfig"
@@ -26,7 +26,7 @@ checkconfig() {
 		return 1
 	fi
 	export $env
-	$command -test $command_args
+	$command $command_args -test
 }
 
 start_pre() {
