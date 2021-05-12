@@ -151,6 +151,7 @@ identify_the_operating_system_and_architecture() {
         ;;
       'mips64')
         MACHINE='mips64'
+	lscpu | grep -q "Little Endian" && MACHINE='mips64le'
         ;;
       'mips64le')
         MACHINE='mips64le'
