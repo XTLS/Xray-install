@@ -210,7 +210,7 @@ identify_the_operating_system_and_architecture() {
     PACKAGE_MANAGEMENT_REMOVE='zypper remove'
     package_provide_tput='ncurses-utils'
   elif [[ "$(type -P pacman)" ]]; then
-    PACKAGE_MANAGEMENT_INSTALL='pacman -Syu --noconfirm'
+    PACKAGE_MANAGEMENT_INSTALL='pacman -Syy --noconfirm'
     PACKAGE_MANAGEMENT_REMOVE='pacman -Rsn'
     package_provide_tput='ncurses'
     elif [[ "$(type -P emerge)" ]]; then
