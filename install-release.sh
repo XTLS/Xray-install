@@ -176,6 +176,10 @@ identify_the_operating_system_and_architecture() {
       PACKAGE_MANAGEMENT_INSTALL='pacman -Syu --noconfirm'
       PACKAGE_MANAGEMENT_REMOVE='pacman -Rsn'
       package_provide_tput='ncurses'
+     elif [[ "$(type -P emerge)" ]]; then
+      PACKAGE_MANAGEMENT_INSTALL='emerge -v'
+      PACKAGE_MANAGEMENT_REMOVE='emerge -Cv'
+      package_provide_tput='ncurses'
     else
       echo "error: The script does not support the package manager in this operating system."
       exit 1
