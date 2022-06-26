@@ -42,6 +42,12 @@ Notice: Xray will NOT log to `/var/log/xray/*.log` by default. Configure `"log"`
 
 ## Advance
 
+**Install & Upgrade Xray-core to a pre-release version**
+
+```
+# bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version 1.5.8
+```
+
 **Install & Upgrade Xray-core and geodata with `User=root`, which will overwrite `User` in existing service files**
 
 ```
