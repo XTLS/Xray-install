@@ -208,7 +208,7 @@ identify_the_operating_system_and_architecture() {
       PACKAGE_MANAGEMENT_REMOVE='pacman -Rsn'
       package_provide_tput='ncurses'
      elif [[ "$(type -P emerge)" ]]; then
-      PACKAGE_MANAGEMENT_INSTALL='emerge -v'
+      PACKAGE_MANAGEMENT_INSTALL='emerge -qv'
       PACKAGE_MANAGEMENT_REMOVE='emerge -Cv'
       package_provide_tput='ncurses'
     else
@@ -339,7 +339,7 @@ install_software() {
   package_name="$1"
   file_to_detect="$2"
   type -P "$file_to_detect" > /dev/null 2>&1 && return
-  if ${PACKAGE_MANAGEMENT_INSTALL} "$package_name"; then
+  if ${PACKAGE_MANAGEMENT_INSTALL} "$package_name" >/dev/null 2>&1; then
     echo "info: $package_name is installed."
   else
     echo "error: Installation of $package_name failed, please check your network."
