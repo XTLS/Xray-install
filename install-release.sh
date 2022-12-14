@@ -407,42 +407,7 @@ get_latest_version() {
 }
 
 version_gt() {
-  # compare two version
-  # 0: $1 >  $2
-  # 1: $1 <= $2
-
-  if [[ "$1" != "$2" ]]; then
-    local temp_1_version_number="${1#v}"
-    local temp_1_major_version_number="${temp_1_version_number%%.*}"
-    local temp_1_minor_version_number
-    temp_1_minor_version_number="$(echo "$temp_1_version_number" | awk -F '.' '{print $2}')"
-    local temp_1_minimunm_version_number="${temp_1_version_number##*.}"
-    # shellcheck disable=SC2001
-    local temp_2_version_number="${2#v}"
-    local temp_2_major_version_number="${temp_2_version_number%%.*}"
-    local temp_2_minor_version_number
-    temp_2_minor_version_number="$(echo "$temp_2_version_number" | awk -F '.' '{print $2}')"
-    local temp_2_minimunm_version_number="${temp_2_version_number##*.}"
-    if [[ "$temp_1_major_version_number" -gt "$temp_2_major_version_number" ]]; then
-      return 0
-    elif [[ "$temp_1_major_version_number" -eq "$temp_2_major_version_number" ]]; then
-      if [[ "$temp_1_minor_version_number" -gt "$temp_2_minor_version_number" ]]; then
-        return 0
-      elif [[ "$temp_1_minor_version_number" -eq "$temp_2_minor_version_number" ]]; then
-        if [[ "$temp_1_minimunm_version_number" -gt "$temp_2_minimunm_version_number" ]]; then
-          return 0
-        else
-          return 1
-        fi
-      else
-        return 1
-      fi
-    else
-      return 1
-    fi
-  elif [[ "$1" == "$2" ]]; then
-    return 1
-  fi
+  test "$(echo -e "$1\\n$2" | sort -V | head -n 1)" != "$1"
 }
 
 download_xray() {
