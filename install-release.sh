@@ -76,6 +76,9 @@ NO_GEODATA='0'
 # --without-logfiles
 NO_LOGFILES='0'
 
+# --logrotate
+LOGROTATE='0'
+
 # --no-update-service
 N_UP_SERVICE='0'
 
@@ -296,6 +299,11 @@ judgment_parameters() {
         ;;
       '--no-update-service')
         N_UP_SERVICE='1'
+        ;;
+      '--logrotate')
+        LOGROTATE='1'
+        LOGROTATE_TIME="$2"
+        shift
         ;;
       *)
         echo "$0: unknown option -- -"
@@ -616,6 +624,59 @@ stop_xray() {
   echo 'info: Stop the Xray service.'
 }
 
+install_with_logrotate() {
+  install_software 'logrotate' 'logrotate'
+  if [[ -z "$LOGROTATE_TIME" ]]; then
+  LOGROTATE_TIME="00:00:00"
+  fi
+  cat <<EOF > /etc/systemd/system/logrotate@.service
+[Unit]
+Description=Rotate log files
+Documentation=man:logrotate(8)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/logrotate /etc/logrotate.d/%i
+EOF
+  cat <<EOF > /etc/systemd/system/logrotate@.timer
+[Unit]
+Description=Run logrotate for %i logs
+
+[Timer]
+OnCalendar=*-*-* $LOGROTATE_TIME
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+  if [[ ! -d '/etc/logrotate.d/' ]]; then
+      install -d -m 700 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" /etc/logrotate.d/
+      LOGROTATE_DIR='1'
+  fi
+  cat << EOF > /etc/logrotate.d/xray
+/var/log/xray/access.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 0600 nobody nobody
+}
+
+/var/log/xray/error.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 0600 nobody nobody
+}
+EOF
+  LOGROTATE_FIN='1'
+}
+
 install_geodata() {
   download_geodata() {
     if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}" "${1}"; then
@@ -672,6 +733,7 @@ remove_xray() {
     fi
     local delete_files=('/usr/local/bin/xray' '/etc/systemd/system/xray.service' '/etc/systemd/system/xray@.service' '/etc/systemd/system/xray.service.d' '/etc/systemd/system/xray@.service.d')
     [[ -d "$DAT_PATH" ]] && delete_files+=("$DAT_PATH")
+    [[ -f '/etc/logrotate.d/xray' ]] && delete_files+=('/etc/logrotate.d/xray')
     if [[ "$PURGE" -eq '1' ]]; then
       if [[ -z "$JSONS_PATH" ]]; then
         delete_files+=("$JSON_PATH")
@@ -679,8 +741,11 @@ remove_xray() {
         delete_files+=("$JSONS_PATH")
       fi
       [[ -d '/var/log/xray' ]] && delete_files+=('/var/log/xray')
+      [[ -f '/etc/systemd/system/logrotate@.service' ]] && delete_files+=('/etc/systemd/system/logrotate@.service')
+      [[ -f '/etc/systemd/system/logrotate@.timer' ]] && delete_files+=('/etc/systemd/system/logrotate@.timer')
     fi
     systemctl disable xray
+    systemctl disable logrotate@xray.timer
     if ! ("rm" -r "${delete_files[@]}"); then
       echo 'error: Failed to remove Xray.'
       exit 1
@@ -732,6 +797,7 @@ show_help() {
   echo "    --no-update-service       Don't change service files if they are exist"
   echo "    --without-geodata         Don't install/update geoip.dat and geosite.dat"
   echo "    --without-logfiles        Don't install /var/log/xray"
+  echo "    --logrotate               Install with logrotate"
   echo '  install-geodata:'
   echo '    -p, --proxy               Download through a proxy server'
   echo '  remove:'
@@ -757,7 +823,7 @@ main() {
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_xray
   [[ "$INSTALL_GEODATA" -eq '1' ]] && install_geodata
-
+  [[ "$LOGROTATE" -eq '1' ]] && install_with_logrotate
   # Check if the user is effective
   check_install_user
 
@@ -847,6 +913,22 @@ main() {
     echo 'installed: /var/log/xray/'
     echo 'installed: /var/log/xray/access.log'
     echo 'installed: /var/log/xray/error.log'
+  fi
+  if [[ "$LOGROTATE_FIN" -eq '1' ]]; then
+    echo 'installed: /etc/systemd/system/logrotate@.service'
+    echo 'installed: /etc/systemd/system/logrotate@.timer'
+    if [[ "$LOGROTATE_DIR" -eq '1' ]]; then
+    echo 'installed: /etc/logrotate.d/'
+    fi
+    echo 'installed: /etc/logrotate.d/xray'
+    systemctl start logrotate@xray.timer
+    systemctl enable logrotate@xray.timer
+    sleep 1s
+    if systemctl -q is-active logrotate@xray.timer; then
+      echo "info: Enable and start the logrotate@xray.timer service"
+    else
+      echo "warning: Failed to enable and start the logrotate@xray.timer service"
+    fi
   fi
   if [[ "$SYSTEMD" -eq '1' ]]; then
     echo 'installed: /etc/systemd/system/xray.service'
