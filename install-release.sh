@@ -626,6 +626,7 @@ stop_xray() {
 
 install_with_logrotate() {
   install_software 'logrotate' 'logrotate'
+  check_install_user
   if [[ -z "$LOGROTATE_TIME" ]]; then
   LOGROTATE_TIME="00:00:00"
   fi
@@ -661,7 +662,7 @@ EOF
     compress
     delaycompress
     notifempty
-    create 0600 nobody nobody
+    create 0600 $INSTALL_USER_UID $INSTALL_USER_GID
 }
 
 /var/log/xray/error.log {
@@ -671,7 +672,7 @@ EOF
     compress
     delaycompress
     notifempty
-    create 0600 nobody nobody
+    create 0600 $INSTALL_USER_UID $INSTALL_USER_GID
 }
 EOF
   LOGROTATE_FIN='1'
