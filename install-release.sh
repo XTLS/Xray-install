@@ -626,7 +626,6 @@ stop_xray() {
 
 install_with_logrotate() {
   install_software 'logrotate' 'logrotate'
-  check_install_user
   if [[ -z "$LOGROTATE_TIME" ]]; then
   LOGROTATE_TIME="00:00:00"
   fi
@@ -655,20 +654,10 @@ EOF
       LOGROTATE_DIR='1'
   fi
   cat << EOF > /etc/logrotate.d/xray
-/var/log/xray/access.log {
+/var/log/xray/*.log {
     daily
     missingok
-    rotate 30
-    compress
-    delaycompress
-    notifempty
-    create 0600 $INSTALL_USER_UID $INSTALL_USER_GID
-}
-
-/var/log/xray/error.log {
-    daily
-    missingok
-    rotate 30
+    rotate 7
     compress
     delaycompress
     notifempty
@@ -824,9 +813,12 @@ main() {
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_xray
   [[ "$INSTALL_GEODATA" -eq '1' ]] && install_geodata
-  [[ "$LOGROTATE" -eq '1' ]] && install_with_logrotate
+
   # Check if the user is effective
   check_install_user
+
+  # Check Logrotate after Check User
+  [[ "$LOGROTATE" -eq '1' ]] && install_with_logrotate
 
   # Two very important variables
   TMP_DIRECTORY="$(mktemp -d)"
