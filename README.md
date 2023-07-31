@@ -48,6 +48,18 @@ Notice: Xray will NOT log to `/var/log/xray/*.log` by default. Configure `"log"`
 # bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --beta
 ```
 
+**Install & Upgrade Xray-core and geodata with `logrotate`**
+
+```
+# bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --logrotate
+```
+```
+installed: /etc/systemd/system/logrotate@.service
+installed: /etc/systemd/system/logrotate@.timer
+
+installed: /etc/logrotate.d/xray
+```
+
 **Install & Upgrade Xray-core and geodata with `User=root`, which will overwrite `User` in existing service files**
 
 ```
