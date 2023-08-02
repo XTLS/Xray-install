@@ -735,7 +735,13 @@ remove_xray() {
       [[ -f '/etc/systemd/system/logrotate@.timer' ]] && delete_files+=('/etc/systemd/system/logrotate@.timer')
     fi
     systemctl disable xray
-    systemctl disable logrotate@xray.timer
+    if [[ -f '/etc/systemd/system/logrotate@.timer' ]] ; then
+      if ! systemctl stop logrotate@xray.timer && systemctl disable logrotate@xray.timer ; then
+        echo 'error: Stopping and disabling the logrotate service failed.'
+        exit 1
+      fi
+      echo 'info: Stop and disable the logrotate service.'
+    fi
     if ! ("rm" -r "${delete_files[@]}"); then
       echo 'error: Failed to remove Xray.'
       exit 1
@@ -787,7 +793,7 @@ show_help() {
   echo "    --no-update-service       Don't change service files if they are exist"
   echo "    --without-geodata         Don't install/update geoip.dat and geosite.dat"
   echo "    --without-logfiles        Don't install /var/log/xray"
-  echo "    --logrotate               Install with logrotate"
+  echo "    --logrotate [time]        Install with logrotate. [time] can be in the format of 12:34:56"
   echo '  install-geodata:'
   echo '    -p, --proxy               Download through a proxy server'
   echo '  remove:'
