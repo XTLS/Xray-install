@@ -124,102 +124,101 @@ check_if_running_as_root() {
 }
 
 identify_the_operating_system_and_architecture() {
-  if [[ "$(uname)" == 'Linux' ]]; then
-    case "$(uname -m)" in
-      'i386' | 'i686')
-        MACHINE='32'
-        ;;
-      'amd64' | 'x86_64')
-        MACHINE='64'
-        ;;
-      'armv5tel')
-        MACHINE='arm32-v5'
-        ;;
-      'armv6l')
-        MACHINE='arm32-v6'
-        grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
-        ;;
-      'armv7' | 'armv7l')
-        MACHINE='arm32-v7a'
-        grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
-        ;;
-      'armv8' | 'aarch64')
-        MACHINE='arm64-v8a'
-        ;;
-      'mips')
-        MACHINE='mips32'
-        ;;
-      'mipsle')
-        MACHINE='mips32le'
-        ;;
-      'mips64')
-        MACHINE='mips64'
-        lscpu | grep -q "Little Endian" && MACHINE='mips64le'
-        ;;
-      'mips64le')
-        MACHINE='mips64le'
-        ;;
-      'ppc64')
-        MACHINE='ppc64'
-        ;;
-      'ppc64le')
-        MACHINE='ppc64le'
-        ;;
-      'riscv64')
-        MACHINE='riscv64'
-        ;;
-      's390x')
-        MACHINE='s390x'
-        ;;
-      *)
-        echo "error: The architecture is not supported."
-        exit 1
-        ;;
-    esac
-    if [[ ! -f '/etc/os-release' ]]; then
-      echo "error: Don't use outdated Linux distributions."
-      exit 1
-    fi
-    # Do not combine this judgment condition with the following judgment condition.
-    ## Be aware of Linux distribution like Gentoo, which kernel supports switch between Systemd and OpenRC.
-    if [[ -f /.dockerenv ]] || grep -q 'docker\|lxc' /proc/1/cgroup && [[ "$(type -P systemctl)" ]]; then
-      true
-    elif [[ -d /run/systemd/system ]] || grep -q systemd <(ls -l /sbin/init); then
-      true
-    else
-      echo "error: Only Linux distributions using systemd are supported."
-      exit 1
-    fi
-    if [[ "$(type -P apt)" ]]; then
-      PACKAGE_MANAGEMENT_INSTALL='apt -y --no-install-recommends install'
-      PACKAGE_MANAGEMENT_REMOVE='apt purge'
-      package_provide_tput='ncurses-bin'
-    elif [[ "$(type -P dnf)" ]]; then
-      PACKAGE_MANAGEMENT_INSTALL='dnf -y install'
-      PACKAGE_MANAGEMENT_REMOVE='dnf remove'
-      package_provide_tput='ncurses'
-    elif [[ "$(type -P yum)" ]]; then
-      PACKAGE_MANAGEMENT_INSTALL='yum -y install'
-      PACKAGE_MANAGEMENT_REMOVE='yum remove'
-      package_provide_tput='ncurses'
-    elif [[ "$(type -P zypper)" ]]; then
-      PACKAGE_MANAGEMENT_INSTALL='zypper install -y --no-recommends'
-      PACKAGE_MANAGEMENT_REMOVE='zypper remove'
-      package_provide_tput='ncurses-utils'
-    elif [[ "$(type -P pacman)" ]]; then
-      PACKAGE_MANAGEMENT_INSTALL='pacman -Syu --noconfirm'
-      PACKAGE_MANAGEMENT_REMOVE='pacman -Rsn'
-      package_provide_tput='ncurses'
-     elif [[ "$(type -P emerge)" ]]; then
-      PACKAGE_MANAGEMENT_INSTALL='emerge -qv'
-      PACKAGE_MANAGEMENT_REMOVE='emerge -Cv'
-      package_provide_tput='ncurses'
-    else
-      echo "error: The script does not support the package manager in this operating system."
-      exit 1
-    fi
-  else
+  if [[ "$(uname)" != 'Linux' ]]; then
     echo "error: This operating system is not supported."
+    exit 1
+  fi
+  case "$(uname -m)" in
+    'i386' | 'i686')
+      MACHINE='32'
+      ;;
+    'amd64' | 'x86_64')
+      MACHINE='64'
+      ;;
+    'armv5tel')
+      MACHINE='arm32-v5'
+      ;;
+    'armv6l')
+      MACHINE='arm32-v6'
+      grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+      ;;
+    'armv7' | 'armv7l')
+      MACHINE='arm32-v7a'
+      grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+      ;;
+    'armv8' | 'aarch64')
+      MACHINE='arm64-v8a'
+      ;;
+    'mips')
+      MACHINE='mips32'
+      ;;
+    'mipsle')
+      MACHINE='mips32le'
+      ;;
+    'mips64')
+      MACHINE='mips64'
+      lscpu | grep -q "Little Endian" && MACHINE='mips64le'
+      ;;
+    'mips64le')
+      MACHINE='mips64le'
+      ;;
+    'ppc64')
+      MACHINE='ppc64'
+      ;;
+    'ppc64le')
+      MACHINE='ppc64le'
+      ;;
+    'riscv64')
+      MACHINE='riscv64'
+      ;;
+    's390x')
+      MACHINE='s390x'
+      ;;
+    *)
+      echo "error: The architecture is not supported."
+      exit 1
+      ;;
+  esac
+  if [[ ! -f '/etc/os-release' ]]; then
+    echo "error: Don't use outdated Linux distributions."
+    exit 1
+  fi
+  # Do not combine this judgment condition with the following judgment condition.
+  ## Be aware of Linux distribution like Gentoo, which kernel supports switch between Systemd and OpenRC.
+  if [[ -f /.dockerenv ]] || grep -q 'docker\|lxc' /proc/1/cgroup && [[ "$(type -P systemctl)" ]]; then
+    true
+  elif [[ -d /run/systemd/system ]] || grep -q systemd <(ls -l /sbin/init); then
+    true
+  else
+    echo "error: Only Linux distributions using systemd are supported."
+    exit 1
+  fi
+  if [[ "$(type -P apt)" ]]; then
+    PACKAGE_MANAGEMENT_INSTALL='apt -y --no-install-recommends install'
+    PACKAGE_MANAGEMENT_REMOVE='apt purge'
+    package_provide_tput='ncurses-bin'
+  elif [[ "$(type -P dnf)" ]]; then
+    PACKAGE_MANAGEMENT_INSTALL='dnf -y install'
+    PACKAGE_MANAGEMENT_REMOVE='dnf remove'
+    package_provide_tput='ncurses'
+  elif [[ "$(type -P yum)" ]]; then
+    PACKAGE_MANAGEMENT_INSTALL='yum -y install'
+    PACKAGE_MANAGEMENT_REMOVE='yum remove'
+    package_provide_tput='ncurses'
+  elif [[ "$(type -P zypper)" ]]; then
+    PACKAGE_MANAGEMENT_INSTALL='zypper install -y --no-recommends'
+    PACKAGE_MANAGEMENT_REMOVE='zypper remove'
+    package_provide_tput='ncurses-utils'
+  elif [[ "$(type -P pacman)" ]]; then
+    PACKAGE_MANAGEMENT_INSTALL='pacman -Syu --noconfirm'
+    PACKAGE_MANAGEMENT_REMOVE='pacman -Rsn'
+    package_provide_tput='ncurses'
+    elif [[ "$(type -P emerge)" ]]; then
+    PACKAGE_MANAGEMENT_INSTALL='emerge -qv'
+    PACKAGE_MANAGEMENT_REMOVE='emerge -Cv'
+    package_provide_tput='ncurses'
+  else
+    echo "error: The script does not support the package manager in this operating system."
     exit 1
   fi
 }
@@ -335,12 +334,12 @@ check_install_user() {
       INSTALL_USER='nobody'
     fi
   fi
-  if ! id $INSTALL_USER > /dev/null 2>&1; then
+  if ! id "$INSTALL_USER" > /dev/null 2>&1; then
     echo "the user '$INSTALL_USER' is not effective"
     exit 1
   fi
-  INSTALL_USER_UID="$(id -u $INSTALL_USER)"
-  INSTALL_USER_GID="$(id -g $INSTALL_USER)"
+  INSTALL_USER_UID="$(id -u "$INSTALL_USER")"
+  INSTALL_USER_GID="$(id -g "$INSTALL_USER")"
 }
 
 install_software() {
@@ -405,9 +404,9 @@ get_latest_version() {
     exit 1
   fi
   local i
-  for i in ${!releases_list[@]}
+  for i in "${!releases_list[@]}"
   do
-    releases_list[$i]="v${releases_list[$i]#v}"
+    releases_list["$i"]="v${releases_list[$i]#v}"
     grep -q "https://github.com/XTLS/Xray-core/releases/download/${releases_list[$i]}/Xray-linux-$MACHINE.zip" "$tmp_file" && break
   done
   "rm" "$tmp_file"
@@ -419,25 +418,28 @@ version_gt() {
 }
 
 download_xray() {
-  DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/download/$INSTALL_VERSION/Xray-linux-$MACHINE.zip"
+  DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/download/${INSTALL_VERSION}/Xray-linux-${MACHINE}.zip"
   echo "Downloading Xray archive: $DOWNLOAD_LINK"
-  if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK"; then
+  if curl -f -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK"; then
+    echo "ok."
+  else
     echo 'error: Download failed! Please check your network or try again.'
     return 1
   fi
-  return 0
-  echo "Downloading verification file for Xray archive: $DOWNLOAD_LINK.dgst"
-  if ! curl -x "${PROXY}" -sSR -H 'Cache-Control: no-cache' -o "$ZIP_FILE.dgst" "$DOWNLOAD_LINK.dgst"; then
+  echo "Downloading verification file for Xray archive: ${DOWNLOAD_LINK}.dgst"
+  if curl -f -x "${PROXY}" -sSR -H 'Cache-Control: no-cache' -o "${ZIP_FILE}.dgst" "${DOWNLOAD_LINK}.dgst"; then
+    echo "ok."
+  else
     echo 'error: Download failed! Please check your network or try again.'
     return 1
   fi
-  if [[ "$(cat "$ZIP_FILE".dgst)" == 'Not Found' ]]; then
+  if grep 'Not Found' "${ZIP_FILE}.dgst"; then
     echo 'error: This version does not support verification. Please replace with another version.'
     return 1
   fi
 
   # Verification of Xray archive
-  CHECKSUM=$(cat "$ZIP_FILE".dgst | awk -F '= ' '/256=/ {print $2}')
+  CHECKSUM=$(awk -F '= ' '/256=/ {print $2}' "${ZIP_FILE}.dgst")
   LOCALSUM=$(sha256sum "$ZIP_FILE" | awk '{printf $1}')
   if [[ "$CHECKSUM" != "$LOCALSUM" ]]; then
     echo 'error: SHA256 check failed! Please check your network or try again.'
@@ -588,7 +590,7 @@ ExecStart=/usr/local/bin/xray run -config ${JSON_PATH}/%i.json" > \
   echo "${red}warning: ${green}Please make sure the configuration file path is correctly set.${reset}"
   systemd_cat_config /etc/systemd/system/xray.service
   # shellcheck disable=SC2154
-  if [[ x"${check_all_service_files:0:1}" = x'y' ]]; then
+  if [[ "${check_all_service_files:0:1}" = 'y' ]]; then
     echo
     echo
     systemd_cat_config /etc/systemd/system/xray@.service
@@ -695,7 +697,7 @@ install_geodata() {
       exit 1
     fi
   done
-  cd - > /dev/null
+  cd - > /dev/null || exit 1
   install -d "$DAT_PATH"
   install -m 644 "${dir_tmp}"/${file_dlc} "${DAT_PATH}"/${file_site}
   install -m 644 "${dir_tmp}"/${file_ip} "${DAT_PATH}"/${file_ip}
@@ -746,7 +748,7 @@ remove_xray() {
       echo 'error: Failed to remove Xray.'
       exit 1
     else
-      for i in ${!delete_files[@]}
+      for i in "${!delete_files[@]}"
       do
         echo "removed: ${delete_files[$i]}"
       done
@@ -886,7 +888,7 @@ main() {
     fi
   fi
   install_xray
-  ([[ "$N_UP_SERVICE" -eq '1' ]] && [[ -f '/etc/systemd/system/xray.service' ]]) || install_startup_service_file
+  [[ "$N_UP_SERVICE" -eq '1' && -f '/etc/systemd/system/xray.service' ]] || install_startup_service_file
   echo 'installed: /usr/local/bin/xray'
   # If the file exists, the content output of installing or updating geoip.dat and geosite.dat will not be displayed
   if [[ "$GEODATA" -eq '1' ]]; then
