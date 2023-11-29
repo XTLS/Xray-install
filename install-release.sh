@@ -518,6 +518,12 @@ install_startup_service_file() {
     temp_AmbientCapabilities="#${temp_AmbientCapabilities}"
     temp_NoNewPrivileges="#${temp_NoNewPrivileges}"
   fi
+  local temp_UserSet=""
+  if [[ "$INSTALL_USER" -eq 'nobody' ]]; then
+    temp_UserSet="DynamicUser=yes"
+  else
+    temp_UserSet="User=${INSTALL_USER}"
+  fi
 cat > /etc/systemd/system/xray.service << EOF
 [Unit]
 Description=Xray Service
@@ -525,7 +531,7 @@ Documentation=https://github.com/xtls
 After=network.target nss-lookup.target
 
 [Service]
-User=$INSTALL_USER
+${temp_UserSet}
 ${temp_CapabilityBoundingSet}
 ${temp_AmbientCapabilities}
 ${temp_NoNewPrivileges}
@@ -545,7 +551,7 @@ Documentation=https://github.com/xtls
 After=network.target nss-lookup.target
 
 [Service]
-User=$INSTALL_USER
+${temp_UserSet}
 ${temp_CapabilityBoundingSet}
 ${temp_AmbientCapabilities}
 ${temp_NoNewPrivileges}
