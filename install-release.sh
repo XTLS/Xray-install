@@ -528,7 +528,7 @@ cat > /etc/systemd/system/xray.service << EOF
 [Unit]
 Description=Xray Service
 Documentation=https://github.com/xtls
-After=network.target nss-lookup.target
+After=network-online.target nss-lookup.target
 
 [Service]
 ${temp_UserSet}
@@ -548,7 +548,7 @@ cat > /etc/systemd/system/xray@.service <<EOF
 [Unit]
 Description=Xray Service
 Documentation=https://github.com/xtls
-After=network.target nss-lookup.target
+After=network-online.target nss-lookup.target
 
 [Service]
 ${temp_UserSet}
