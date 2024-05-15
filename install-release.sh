@@ -485,7 +485,7 @@ install_xray() {
   # shellcheck disable=SC2153
   if [[ -z "$JSONS_PATH" ]] && [[ ! -d "$JSON_PATH" ]]; then
     install -d "$JSON_PATH"
-    echo "{
+    echo '{
     "inbounds": [ // 服务端入站配置
         {
             "listen": "0.0.0.0",
@@ -533,7 +533,7 @@ install_xray() {
             "tag": "blocked"
         }
     ]    
-} " > "${JSON_PATH}/config.json"
+} ' > "${JSON_PATH}/config.json"
     CONFIG_NEW='1'
   fi
 
