@@ -130,57 +130,77 @@ identify_the_operating_system_and_architecture() {
     echo "error: This operating system is not supported."
     return 1
   fi
+
+  # Add OpenWrt detection
+  if grep -q -i 'openwrt' /etc/openwrt_release 2>/dev/null; then
+    echo "info: OpenWrt system detected."
+    OPENWRT=1
+  else
+    OPENWRT=0
+  fi
+
   case "$(uname -m)" in
-    'i386' | 'i686')
-      MACHINE='32'
-      ;;
-    'amd64' | 'x86_64')
-      MACHINE='64'
-      ;;
-    'armv5tel')
-      MACHINE='arm32-v5'
-      ;;
-    'armv6l')
-      MACHINE='arm32-v6'
-      grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
-      ;;
-    'armv7' | 'armv7l')
-      MACHINE='arm32-v7a'
-      grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
-      ;;
-    'armv8' | 'aarch64')
-      MACHINE='arm64-v8a'
-      ;;
-    'mips')
-      MACHINE='mips32'
-      ;;
-    'mipsle')
-      MACHINE='mips32le'
-      ;;
-    'mips64')
-      MACHINE='mips64'
-      lscpu | grep -q "Little Endian" && MACHINE='mips64le'
-      ;;
-    'mips64le')
-      MACHINE='mips64le'
-      ;;
-    'ppc64')
-      MACHINE='ppc64'
-      ;;
-    'ppc64le')
-      MACHINE='ppc64le'
-      ;;
-    'riscv64')
-      MACHINE='riscv64'
-      ;;
-    's390x')
-      MACHINE='s390x'
-      ;;
-    *)
-      echo "error: The architecture is not supported."
-      return 1
-      ;;
+  'i386' | 'i686')
+    MACHINE='32'
+    ;;
+  'amd64' | 'x86_64')
+    MACHINE='64'
+    ;;
+  'armv5tel')
+    MACHINE='arm32-v5'
+    ;;
+  'armv6l')
+    MACHINE='arm32-v6'
+    grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+    ;;
+  'armv7' | 'armv7l')
+    MACHINE='arm32-v7a'
+    grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+    ;;
+  'armv8' | 'aarch64')
+    MACHINE='arm64-v8a'
+    ;;
+  'mips')
+    MACHINE='mips32'
+    ;;
+  'mipsle')
+    MACHINE='mips32le'
+    ;;
+  'mips64')
+    MACHINE='mips64'
+    lscpu | grep -q "Little Endian" && MACHINE='mips64le'
+    ;;
+  'mips64le')
+    MACHINE='mips64le'
+    ;;
+  'ppc64')
+    MACHINE='ppc64'
+    ;;
+  'ppc64le')
+    MACHINE='ppc64le'
+    ;;
+  'riscv64')
+    MACHINE='riscv64'
+    ;;
+  's390x')
+    MACHINE='s390x'
+    ;;
+  *)
+    echo "error: The architecture is not supported."
+    return 1
+    ;;
   esac
+
+  if [[ "$OPENWRT" -eq '1' ]]; then
+    if [[ ! -f '/etc/openwrt_release' ]]; then
+      echo "error: Not a supported OpenWrt system."
+      return 1
+    fi
+    PACKAGE_MANAGEMENT_INSTALL='opkg update; opkg install'
+    PACKAGE_MANAGEMENT_REMOVE='opkg remove'
+    package_provide_tput='ncurses-utils'
+    return 0
+  fi
   if [[ ! -f '/etc/os-release' ]]; then
     echo "error: Don't use outdated Linux distributions."
     return 1
@@ -215,7 +235,7 @@ identify_the_operating_system_and_architecture() {
     PACKAGE_MANAGEMENT_INSTALL='pacman -Syy --noconfirm'
     PACKAGE_MANAGEMENT_REMOVE='pacman -Rsn'
     package_provide_tput='ncurses'
-    elif [[ "$(type -P emerge)" ]]; then
+  elif [[ "$(type -P emerge)" ]]; then
     PACKAGE_MANAGEMENT_INSTALL='emerge -qv'
     PACKAGE_MANAGEMENT_REMOVE='emerge -Cv'
     package_provide_tput='ncurses'
@@ -231,89 +251,89 @@ judgment_parameters() {
   local temp_version='0'
   while [[ "$#" -gt '0' ]]; do
     case "$1" in
-      'install')
-        INSTALL='1'
-        ;;
-      'install-geodata')
-        INSTALL_GEODATA='1'
-        ;;
-      'remove')
-        REMOVE='1'
-        ;;
-      'help')
-        HELP='1'
-        ;;
-      'check')
-        CHECK='1'
-        ;;
-      '--without-geodata')
-        NO_GEODATA='1'
-        ;;
-      '--without-logfiles')
-        NO_LOGFILES='1'
-        ;;
-      '--purge')
-        PURGE='1'
-        ;;
-      '--version')
-        if [[ -z "$2" ]]; then
-          echo "error: Please specify the correct version."
-          return 1
-        fi
-        temp_version='1'
-        SPECIFIED_VERSION="$2"
-        shift
-        ;;
-      '-f' | '--force')
-        FORCE='1'
-        ;;
-      '--beta')
-        BETA='1'
-        ;;
-      '-l' | '--local')
-        local_install='1'
-        if [[ -z "$2" ]]; then
-          echo "error: Please specify the correct local file."
-          return 1
-        fi
-        LOCAL_FILE="$2"
-        shift
-        ;;
-      '-p' | '--proxy')
-        if [[ -z "$2" ]]; then
-          echo "error: Please specify the proxy server address."
-          return 1
-        fi
-        PROXY="$2"
-        shift
-        ;;
-      '-u' | '--install-user')
-        if [[ -z "$2" ]]; then
-          echo "error: Please specify the install user.}"
-          return 1
-        fi
-        INSTALL_USER="$2"
-        shift
-        ;;
-      '--reinstall')
-        REINSTALL='1'
-        ;;
-      '--no-update-service')
-        N_UP_SERVICE='1'
-        ;;
-      '--logrotate')
-        if ! grep -qE '\b([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\b' <<< "$2";then
-          echo "error: Wrong format of time, it should be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
-          exit 1
-        fi
-        LOGROTATE='1'
-        LOGROTATE_TIME="$2"
-        shift
-        ;;
-      *)
-        echo "$0: unknown option -- -"
+    'install')
+      INSTALL='1'
+      ;;
+    'install-geodata')
+      INSTALL_GEODATA='1'
+      ;;
+    'remove')
+      REMOVE='1'
+      ;;
+    'help')
+      HELP='1'
+      ;;
+    'check')
+      CHECK='1'
+      ;;
+    '--without-geodata')
+      NO_GEODATA='1'
+      ;;
+    '--without-logfiles')
+      NO_LOGFILES='1'
+      ;;
+    '--purge')
+      PURGE='1'
+      ;;
+    '--version')
+      if [[ -z "$2" ]]; then
+        echo "error: Please specify the correct version."
         return 1
-        ;;
+      fi
+      temp_version='1'
+      SPECIFIED_VERSION="$2"
+      shift
+      ;;
+    '-f' | '--force')
+      FORCE='1'
+      ;;
+    '--beta')
+      BETA='1'
+      ;;
+    '-l' | '--local')
+      local_install='1'
+      if [[ -z "$2" ]]; then
+        echo "error: Please specify the correct local file."
+        return 1
+      fi
+      LOCAL_FILE="$2"
+      shift
+      ;;
+    '-p' | '--proxy')
+      if [[ -z "$2" ]]; then
+        echo "error: Please specify the proxy server address."
+        return 1
+      fi
+      PROXY="$2"
+      shift
+      ;;
+    '-u' | '--install-user')
+      if [[ -z "$2" ]]; then
+        echo "error: Please specify the install user.}"
+        return 1
+      fi
+      INSTALL_USER="$2"
+      shift
+      ;;
+    '--reinstall')
+      REINSTALL='1'
+      ;;
+    '--no-update-service')
+      N_UP_SERVICE='1'
+      ;;
+    '--logrotate')
+        if ! grep -qE '\b([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\b' <<< "$2";then
+        echo "error: Wrong format of time, it should be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
+        exit 1
+      fi
+      LOGROTATE='1'
+      LOGROTATE_TIME="$2"
+      shift
+      ;;
+    *)
+      echo "$0: unknown option -- -"
+      return 1
+      ;;
     esac
     shift
   done
@@ -480,6 +500,27 @@ install_file() {
 }
 
 install_xray() {
+  # Install Xray binary to /usr/bin/ and /etc/xray (OpenWrt)
+  if [[ "$OPENWRT" -eq '1' ]]; then
+    cp "${TMP_DIRECTORY}/xray" "/usr/bin/xray"
+    chmod 755 "/usr/bin/xray"
+    mkdir -p /etc/xray
+    if [[ ! -f /etc/xray/config.json ]]; then
+      echo "{}" >"/etc/xray/config.json"
+      CONFIG_NEW='1'
+    fi
+    mkdir -p "/usr/share/xray"
+    cp "${TMP_DIRECTORY}/geoip.dat" "/usr/share/xray/geoip.dat"
+    cp "${TMP_DIRECTORY}/geosite.dat" "/usr/share/xray/geosite.dat"
+    mkdir -p /var/log/xray
+    chown -R "$INSTALL_USER_UID:$INSTALL_USER_GID" /var/log/xray
+    if [[ ! -f /var/log/xray/access.log ]]; then
+      touch /var/log/xray/access.log
+      touch /var/log/xray/error.log
+      LOG=1
+    fi
+    return 0
+  fi
   # Install Xray binary to /usr/local/bin/ and $DAT_PATH
   install_file xray
   # If the file exists, geoip.dat and geosite.dat will not be installed or updated
@@ -521,6 +562,74 @@ install_xray() {
 }
 
 install_startup_service_file() {
+  if [[ "$OPENWRT" -eq '1' ]]; then
+    [[ -f /etc/init.d/xray ]] && return 0
+    # Create OpenWrt init script
+    cat >/etc/init.d/xray <<'EOF'
+#!/bin/sh /etc/rc.common
+
+USE_PROCD=1
+START=99
+
+CONF="xray"
+PROG="/usr/bin/xray"
+
+start_service() {
+	config_load "$CONF"
+
+	local enabled
+	config_get_bool enabled "enabled" "enabled" "0"
+	[ "$enabled" -eq "1" ] || return 1
+
+	local confdir
+	local conffiles
+	local datadir
+	local dialer
+	local format
+
+	config_get confdir "config" "confdir"
+	config_get conffiles "config" "conffiles"
+	config_get datadir "config" "datadir" "/usr/share/xray"
+	config_get dialer "config" "dialer"
+	config_get format "config" "format" "json"
+
+	procd_open_instance "$CONF"
+	procd_set_param command "$PROG" run
+	[ -n "$confdir" ] && procd_append_param command -confdir "$confdir"
+	[ -n "$conffiles" ] && {
+		for i in $conffiles
+		do
+			procd_append_param command -config "$i"
+		done
+	}
+	[ -n "$format" ] && procd_append_param command -format "$format"
+	[ -n "$dialer" ] && procd_set_param env XRAY_BROWSER_DIALER="$dialer"
+	procd_set_param env XRAY_LOCATION_ASSET="$datadir"
+	procd_set_param file $conffiles
+
+	procd_set_param limits core="unlimited"
+	procd_set_param limits nofile="1000000 1000000"
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_set_param respawn
+
+	procd_close_instance
+}
+
+reload_service() {
+	stop
+	start
+}
+
+service_triggers() {
+	procd_add_reload_trigger "$CONF"
+}
+EOF
+
+    chmod +x /etc/init.d/xray
+    /etc/init.d/xray enable
+    return 0
+  fi
   mkdir -p '/etc/systemd/system/xray.service.d'
   mkdir -p '/etc/systemd/system/xray@.service.d/'
   local temp_CapabilityBoundingSet="CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
@@ -613,6 +722,15 @@ ExecStart=/usr/local/bin/xray run -config ${JSON_PATH}/%i.json" > \
 }
 
 start_xray() {
+  if [[ "$OPENWRT" -eq 1 ]]; then
+    if /etc/init.d/xray start; then
+      echo 'info: Start the Xray service.'
+    else
+      echo 'error: Failed to start Xray service.'
+      exit 1
+    fi
+    return 0
+  fi
   if [[ -f '/etc/systemd/system/xray.service' ]]; then
     systemctl start "${XRAY_CUSTOMIZE:-xray}"
     sleep 1s
@@ -626,6 +744,11 @@ start_xray() {
 }
 
 stop_xray() {
+  if [[ "$OPENWRT" -eq '1' ]]; then
+    /etc/init.d/xray stop
+    echo 'info: Stop the Xray service.'
+    return 0
+  fi
   XRAY_CUSTOMIZE="$(systemctl list-units | grep 'xray@' | awk -F ' ' '{print $1}')"
   if [[ -z "$XRAY_CUSTOMIZE" ]]; then
     local xray_daemon_to_stop='xray.service'
@@ -642,7 +765,7 @@ stop_xray() {
 install_with_logrotate() {
   install_software 'logrotate' 'logrotate'
   if [[ -z "$LOGROTATE_TIME" ]]; then
-  LOGROTATE_TIME="00:00:00"
+    LOGROTATE_TIME="00:00:00"
   fi
   cat <<EOF > /etc/systemd/system/logrotate@.service
 [Unit]
@@ -665,8 +788,8 @@ Persistent=true
 WantedBy=timers.target
 EOF
   if [[ ! -d '/etc/logrotate.d/' ]]; then
-      install -d -m 700 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" /etc/logrotate.d/
-      LOGROTATE_DIR='1'
+    install -d -m 700 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" /etc/logrotate.d/
+    LOGROTATE_DIR='1'
   fi
   cat << EOF > /etc/logrotate.d/xray
 /var/log/xray/*.log {
@@ -933,7 +1056,7 @@ main() {
     echo 'installed: /etc/systemd/system/logrotate@.service'
     echo 'installed: /etc/systemd/system/logrotate@.timer'
     if [[ "$LOGROTATE_DIR" -eq '1' ]]; then
-    echo 'installed: /etc/logrotate.d/'
+      echo 'installed: /etc/logrotate.d/'
     fi
     echo 'installed: /etc/logrotate.d/xray'
     systemctl start logrotate@xray.timer
