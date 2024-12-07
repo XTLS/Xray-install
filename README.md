@@ -25,19 +25,19 @@ Notice: Xray will NOT log to `/var/log/xray/*.log` by default. Configure `"log"`
 **Install & Upgrade Xray-core and geodata with `User=nobody`, but will NOT overwrite `User` in existing service files**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+curl -fL https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install
 ```
 
 **Update geoip.dat and geosite.dat only**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install-geodata
+curl -fL https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install-geodata
 ```
 
 **Remove Xray, except json and logs**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove
+curl -fL https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - remove
 ```
 
 ## Advance
@@ -45,13 +45,13 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 **Install & Upgrade Xray-core to a pre-release version**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --beta
+curl -fL https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install --beta
 ```
 
 **Install & Upgrade Xray-core and geodata with `logrotate`, `$time` can be in the format of 12:34:56**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --logrotate $time
+curl -fL https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install --logrotate $time
 ```
 ```
 installed: /etc/systemd/system/logrotate@.service
@@ -63,25 +63,25 @@ installed: /etc/logrotate.d/xray
 **Install & Upgrade Xray-core and geodata with `User=root`, which will overwrite `User` in existing service files**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u root
+curl -fL https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install -u root
 ```
 
 **Install & Upgrade Xray-core without geodata**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --without-geodata
+curl -fL https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install --without-geodata
 ```
 
 **Remove Xray, include json and logs**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
+curl -fL https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - remove --purge
 ```
 
 ## More Usage
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ help
+curl -fL https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - help
 ```
 
 ## Stargazers over time
