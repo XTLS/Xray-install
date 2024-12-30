@@ -117,16 +117,18 @@ systemd_cat_config() {
 
 check_if_running_as_root() {
   # If you want to run as another user, please modify $EUID to be owned by this user
-  if [[ "$EUID" -ne '0' ]]; then
+  if [[ "$(id -u)" -eq 0 ]]; then
+    return 0
+  else
     echo "error: You must run this script as root!"
-    exit 1
+    return 1
   fi
 }
 
 identify_the_operating_system_and_architecture() {
   if [[ "$(uname)" != 'Linux' ]]; then
     echo "error: This operating system is not supported."
-    exit 1
+    return 1
   fi
   case "$(uname -m)" in
     'i386' | 'i686')
@@ -176,12 +178,12 @@ identify_the_operating_system_and_architecture() {
       ;;
     *)
       echo "error: The architecture is not supported."
-      exit 1
+      return 1
       ;;
   esac
   if [[ ! -f '/etc/os-release' ]]; then
     echo "error: Don't use outdated Linux distributions."
-    exit 1
+    return 1
   fi
   # Do not combine this judgment condition with the following judgment condition.
   ## Be aware of Linux distribution like Gentoo, which kernel supports switch between Systemd and OpenRC.
@@ -191,7 +193,7 @@ identify_the_operating_system_and_architecture() {
     true
   else
     echo "error: Only Linux distributions using systemd are supported."
-    exit 1
+    return 1
   fi
   if [[ "$(type -P apt)" ]]; then
     PACKAGE_MANAGEMENT_INSTALL='apt -y --no-install-recommends install'
@@ -219,7 +221,7 @@ identify_the_operating_system_and_architecture() {
     package_provide_tput='ncurses'
   else
     echo "error: The script does not support the package manager in this operating system."
-    exit 1
+    return 1
   fi
 }
 
@@ -256,7 +258,7 @@ judgment_parameters() {
       '--version')
         if [[ -z "$2" ]]; then
           echo "error: Please specify the correct version."
-          exit 1
+          return 1
         fi
         temp_version='1'
         SPECIFIED_VERSION="$2"
@@ -272,7 +274,7 @@ judgment_parameters() {
         local_install='1'
         if [[ -z "$2" ]]; then
           echo "error: Please specify the correct local file."
-          exit 1
+          return 1
         fi
         LOCAL_FILE="$2"
         shift
@@ -280,7 +282,7 @@ judgment_parameters() {
       '-p' | '--proxy')
         if [[ -z "$2" ]]; then
           echo "error: Please specify the proxy server address."
-          exit 1
+          return 1
         fi
         PROXY="$2"
         shift
@@ -288,7 +290,7 @@ judgment_parameters() {
       '-u' | '--install-user')
         if [[ -z "$2" ]]; then
           echo "error: Please specify the install user.}"
-          exit 1
+          return 1
         fi
         INSTALL_USER="$2"
         shift
@@ -310,7 +312,7 @@ judgment_parameters() {
         ;;
       *)
         echo "$0: unknown option -- -"
-        exit 1
+        return 1
         ;;
     esac
     shift
@@ -319,11 +321,11 @@ judgment_parameters() {
     INSTALL='1'
   elif ((INSTALL+INSTALL_GEODATA+HELP+CHECK+REMOVE>1)); then
     echo 'You can only choose one action.'
-    exit 1
+    return 1
   fi
   if [[ "$INSTALL" -eq '1' ]] && ((temp_version+local_install+REINSTALL+BETA>1)); then
     echo "--version,--reinstall,--beta and --local can't be used together."
-    exit 1
+    return 1
   fi
 }
 
@@ -372,7 +374,10 @@ get_latest_version() {
   # Get Xray latest release version number
   local tmp_file
   tmp_file="$(mktemp)"
-  if ! curl -x "${PROXY}" -sS -H "Accept: application/vnd.github.v3+json" -o "$tmp_file" 'https://api.github.com/repos/XTLS/Xray-core/releases/latest'; then
+  local url='https://api.github.com/repos/XTLS/Xray-core/releases/latest'
+  if curl -x "${PROXY}" -sSfLo "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
+    echo "get release list success"
+  else
     "rm" "$tmp_file"
     echo 'error: Failed to get release list, please check your network.'
     exit 1
@@ -390,14 +395,16 @@ get_latest_version() {
   fi
   "rm" "$tmp_file"
   RELEASE_LATEST="v${RELEASE_LATEST#v}"
-  if ! curl -x "${PROXY}" -sS -H "Accept: application/vnd.github.v3+json" -o "$tmp_file" 'https://api.github.com/repos/XTLS/Xray-core/releases'; then
+  if curl -x "${PROXY}" -sSfLo "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
+    echo "get release list success"
+  else
     "rm" "$tmp_file"
     echo 'error: Failed to get release list, please check your network.'
     exit 1
   fi
   local releases_list
-  releases_list=($(sed 'y/,/\n/' "$tmp_file" | grep 'tag_name' | awk -F '"' '{print $4}'))
-  if [[ "${#releases_list[@]}" -eq '0' ]]; then
+  readarray -t releases_list < <(sed 'y/,/\n/' "$tmp_file" | grep 'tag_name' | awk -F '"' '{print $4}')
+  if [[ "${#releases_list[@]}" -eq 0 ]]; then
     if grep -q "API rate limit exceeded" "$tmp_file"; then
       echo "error: github API rate limit exceeded"
     else
@@ -407,14 +414,16 @@ get_latest_version() {
     "rm" "$tmp_file"
     exit 1
   fi
-  local i
-  for i in "${!releases_list[@]}"
-  do
+  local i url_zip
+  for i in "${!releases_list[@]}"; do
     releases_list["$i"]="v${releases_list[$i]#v}"
-    grep -q "https://github.com/XTLS/Xray-core/releases/download/${releases_list[$i]}/Xray-linux-$MACHINE.zip" "$tmp_file" && break
+    url_zip="https://github.com/XTLS/Xray-core/releases/download/${releases_list[$i]}/Xray-linux-$MACHINE.zip"
+    if grep -q "$url_zip" "$tmp_file"; then
+      PRE_RELEASE_LATEST="${releases_list[$i]}"
+      break
+    fi
   done
   "rm" "$tmp_file"
-  PRE_RELEASE_LATEST="${releases_list[$i]}"
 }
 
 version_gt() {
@@ -422,7 +431,7 @@ version_gt() {
 }
 
 download_xray() {
-  DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/download/${INSTALL_VERSION}/Xray-linux-${MACHINE}.zip"
+  local DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/download/${INSTALL_VERSION}/Xray-linux-${MACHINE}.zip"
   echo "Downloading Xray archive: $DOWNLOAD_LINK"
   if curl -f -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK"; then
     echo "ok."
@@ -811,9 +820,9 @@ show_help() {
 }
 
 main() {
-  check_if_running_as_root
-  identify_the_operating_system_and_architecture
-  judgment_parameters "$@"
+  check_if_running_as_root || return 1
+  identify_the_operating_system_and_architecture || return 1
+  judgment_parameters "$@" || return 1
 
   install_software "$package_provide_tput" 'tput'
   red=$(tput setaf 1)
