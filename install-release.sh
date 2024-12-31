@@ -395,6 +395,7 @@ get_latest_version() {
   fi
   "rm" "$tmp_file"
   RELEASE_LATEST="v${RELEASE_LATEST#v}"
+  url='https://api.github.com/repos/XTLS/Xray-core/releases'
   if curl -x "${PROXY}" -sSfLo "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
     echo "get release list success"
   else
