@@ -1,23 +1,22 @@
 #!/sbin/openrc-run
+supervisor=supervise-daemon
 
 name="Xray"
 description="The best v2ray-core, with XTLS support"
 description_checkconfig="Test configuration file"
 
-: ${env:="XRAY_LOCATION_ASSET=/usr/local/lib/xray/"}
+: ${env:="XRAY_LOCATION_ASSET=/usr/local/share/xray/"}
 : ${confdir:="/usr/local/etc/xray/"}
 
 command="/usr/local/bin/xray"
 command_args="run -confdir $confdir"
 command_user="nobody"
-
-pidfile="/run/xray.pid"
-command_background="yes"
-
 extra_commands="checkconfig"
+capabilities="^cap_net_bind_service"
 
 depend() {
-	need net
+	need net localmount
+	after firewall
 }
 
 checkconfig() {
@@ -26,9 +25,12 @@ checkconfig() {
 		return 1
 	fi
 	export $env
-	$command $command_args -test
+	su ${command_user%:*} -s /bin/sh -c "$command $command_args -test"
+	eend $?
 }
 
-start_pre() {
-	checkconfig
+stop_pre() {
+	if [ "$RC_CMD" = restart ]; then
+		checkconfig || return $?
+	fi
 }
