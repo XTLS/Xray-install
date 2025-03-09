@@ -109,9 +109,9 @@ is_it_running() {
 
 install_xray() {
     install -m 755 "${TMP_DIRECTORY}xray" "/usr/local/bin/xray"
-    install -d /usr/local/lib/xray/
-    install -m 755 "${TMP_DIRECTORY}geoip.dat" "/usr/local/lib/xray/geoip.dat"
-    install -m 755 "${TMP_DIRECTORY}geosite.dat" "/usr/local/lib/xray/geosite.dat"
+    install -d /usr/local/share/xray/
+    install -m 755 "${TMP_DIRECTORY}geoip.dat" "/usr/local/share/xray/geoip.dat"
+    install -m 755 "${TMP_DIRECTORY}geosite.dat" "/usr/local/share/xray/geosite.dat"
 }
 
 install_confdir() {
@@ -151,8 +151,8 @@ install_startup_service_file() {
 
 information() {
     echo 'installed: /usr/local/bin/xray'
-    echo 'installed: /usr/local/lib/xray/geoip.dat'
-    echo 'installed: /usr/local/lib/xray/geosite.dat'
+    echo 'installed: /usr/local/share/xray/geoip.dat'
+    echo 'installed: /usr/local/share/xray/geosite.dat'
     if [ "$CONFDIR" -eq '1' ]; then
         echo 'installed: /usr/local/etc/xray/00_log.json'
         echo 'installed: /usr/local/etc/xray/01_api.json'
