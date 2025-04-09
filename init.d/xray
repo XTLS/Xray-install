@@ -20,17 +20,17 @@ command_args="run -confdir $confdir"
 required_files="$confdir"
 
 depend() {
-    need net
-    want dns ntp-client
-    after firewall
+	need net
+	want dns ntp-client
+	after firewall
 }
 
 checkconfig() {
-    export $env
-    $command $command_args -test
-    eend $?
+	export $env
+	$command $command_args -test
+	eend $?
 }
 
 start_pre() {
-    checkconfig || return 1
+	checkconfig || return 1
 }
