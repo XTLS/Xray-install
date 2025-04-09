@@ -6,8 +6,8 @@
 
 ### 安装 cURL
 
-```
-# apk add curl
+```sh
+apk add curl
 ```
 
 ## 下载
@@ -18,43 +18,43 @@ $ curl -O https://raw.githubusercontent.com/XTLS/alpinelinux-install-xray/main/i
 
 ## 使用
 
-```
-# ash install-release.sh
+```sh
+ash install-release.sh
 ```
 
 ## 管理命令
 
 ### 启用
 
-```
-# rc-update add xray
+```sh
+rc-update add xray
 ```
 
 ### 禁用
 
-```
-# rc-update del xray
+```sh
+rc-update del xray
 ```
 
 ### 启动
 
-```
-# rc-service xray start
+```sh
+rc-service xray start
 ```
 
 ### 关闭
 
-```
-# rc-service xray stop
+```sh
+rc-service xray stop
 ```
 
 ### 重启
 
-```
-# rc-service xray restart
+```sh
+rc-service xray restart
 ```
 
-### 重大更改 at 2025-04-09
+## 重大更改 at 2025-04-09
 
 #### 路径变更：原路径 `/usr/local/lib/xray/` 变更为 新路径 `/usr/local/share/xray/`
 

@@ -6,8 +6,8 @@ English | [中文(中国)](README_zh-cn.md) | [中文(薹灣)](README_zh-tw.md)
 
 ### Install cURL
 
-```
-# apk add curl
+```sh
+apk add curl
 ```
 
 ## Download
@@ -18,43 +18,43 @@ $ curl -O https://raw.githubusercontent.com/XTLS/alpinelinux-install-xray/main/i
 
 ## Use
 
-```
-# ash install-release.sh
+```sh
+ash install-release.sh
 ```
 
 ## Commands
 
 ### Enable
 
-```
-# rc-update add xray
+```sh
+rc-update add xray
 ```
 
 ### Disable
 
-```
-# rc-update del xray
+```sh
+rc-update del xray
 ```
 
 ### Start
 
-```
-# rc-service xray start
+```sh
+rc-service xray start
 ```
 
 ### Stop
 
-```
-# rc-service xray stop
+```sh
+rc-service xray stop
 ```
 
 ### Restart
 
-```
-# rc-service xray restart
+```sh
+rc-service xray restart
 ```
 
-### Breaking Changes at 2025-04-09
+## Breaking Changes at 2025-04-09
 
 #### Path Change: Original path `/usr/local/lib/xray/` has been updated to new path `/usr/local/share/xray/`
 
