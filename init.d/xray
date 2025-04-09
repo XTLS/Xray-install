@@ -9,7 +9,7 @@ respawn_max=0
 
 pidfile="/run/${RC_SVCNAME}.pid"
 rc_ulimit="-n 1024000 -u 1024000"
-capabilities="cap_net_bind_service,cap_net_admin,cap_net_raw"
+capabilities="^cap_net_bind_service,^cap_net_admin,^cap_net_raw"
 extra_commands="checkconfig"
 
 env=${env:-"XRAY_LOCATION_ASSET=/usr/local/share/xray/"} # See: https://github.com/XTLS/Xray-core/blob/main/common/platform/platform.go
