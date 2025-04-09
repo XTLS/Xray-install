@@ -1,36 +1,36 @@
 #!/sbin/openrc-run
+
+name="Xray Daemon"
+description="A unified platform for anti-censorship"
+
 supervisor=supervise-daemon
+respawn_delay=2
+respawn_max=0
 
-name="Xray"
-description="The best v2ray-core, with XTLS support"
-description_checkconfig="Test configuration file"
-
-: ${env:="XRAY_LOCATION_ASSET=/usr/local/share/xray/"}
-: ${confdir:="/usr/local/etc/xray/"}
-
-command="/usr/local/bin/xray"
-command_args="run -confdir $confdir"
-command_user="nobody"
+pidfile="/run/${RC_SVCNAME}.pid"
+rc_ulimit="-n 1024000 -u 1024000"
+capabilities="cap_net_bind_service,cap_net_admin,cap_net_raw"
 extra_commands="checkconfig"
-capabilities="^cap_net_bind_service"
+
+env=${env:-"XRAY_LOCATION_ASSET=/usr/local/share/xray/"} # See: https://github.com/XTLS/Xray-core/blob/main/common/platform/platform.go
+confdir=${confdir:-"/usr/local/etc/xray/"}
+command="/usr/local/bin/xray"
+command_user="nobody:nobody"
+command_args="run -confdir $confdir"
+required_files="$confdir"
 
 depend() {
-	need net localmount
-	after firewall
+    need net
+    want dns ntp-client
+    after firewall
 }
 
 checkconfig() {
-	if [ ! -d "$confdir" ]; then
-		eerror "You need to setup $confdir first"
-		return 1
-	fi
-	export $env
-	su ${command_user%:*} -s /bin/sh -c "$command $command_args -test"
-	eend $?
+    export $env
+    $command $command_args -test
+    eend $?
 }
 
-stop_pre() {
-	if [ "$RC_CMD" = restart ]; then
-		checkconfig || return $?
-	fi
+start_pre() {
+    checkconfig || return 1
 }
