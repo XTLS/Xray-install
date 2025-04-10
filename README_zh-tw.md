@@ -74,5 +74,5 @@ rc-service xray restart
 - 普通用戶無需關注此改動
 
 ```sh
-sed -i 's/^capabilities="cap_net_bind_service,cap_net_admin,cap_net_raw"$/capabilities="cap_net_bind_service"/g' /etc/init.d/xray
+sed -i 's/^capabilities="^cap_net_bind_service,^cap_net_admin,^cap_net_raw"$/capabilities="^cap_net_bind_service"/g' /etc/init.d/xray
 ```
