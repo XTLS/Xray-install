@@ -62,7 +62,7 @@ rc-service xray restart
 - If you have scripts to automatically update these files, please adjust them accordingly
 - Regular users can ignore this change
 
-#### Watchdog: Xray process will now automatically restart indefinitely (every 2 seconds) upon panic
+#### Watchdog: Xray process will now automatically restart indefinitely (every 5 seconds) upon panic, unless it panic 3 times in 10 minutes
 
 - Advanced users no longer need to manually modify `/etc/init.d/xray` or write custom daemon scripts
 - Regular users can ignore this change
