@@ -12,8 +12,8 @@ apk add curl
 
 ## 下載
 
-```
-$ curl -O https://raw.githubusercontent.com/XTLS/alpinelinux-install-xray/main/install-release.sh
+```sh
+curl -O https://raw.githubusercontent.com/XTLS/alpinelinux-install-xray/main/install-release.sh
 ```
 
 ## 使用
