@@ -1,4 +1,5 @@
 #!/usr/bin/env ash
+# shellcheck shell=dash
 
 set -euxo pipefail
 
@@ -87,10 +88,10 @@ identify_architecture() {
 }
 
 install_software() {
-    if [[ -n "$(command -v curl)" ]]; then
+    if [ -n "$(command -v curl)" ]; then
         return
     fi
-    if [[ -n "$(command -v unzip)" ]]; then
+    if [ -n "$(command -v unzip)" ]; then
         return
     fi
     if [ "$(command -v apk)" ]; then
@@ -117,7 +118,7 @@ download_xray() {
 verification_xray() {
     CHECKSUM=$(cat "$ZIP_FILE".dgst | awk -F '= ' '/256=/ {print $2}')
     LOCALSUM=$(sha256sum "$ZIP_FILE" | awk '{printf $1}')
-    if [[ "$CHECKSUM" != "$LOCALSUM" ]]; then
+    if [ "$CHECKSUM" != "$LOCALSUM" ]; then
         echo 'error: SHA256 check failed! Please check your network or try again.'
         return 1
     fi
