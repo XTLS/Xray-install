@@ -1,6 +1,6 @@
 # alpinelinux-install-xray
 
-[English](README.md) | [中文(中国)](README_zh-cn.md) | 中文(薹灣)
+[English](README.md) | [简体中文](README_zh-Hans.md) | 繁體中文
 
 ## 依賴軟體
 
