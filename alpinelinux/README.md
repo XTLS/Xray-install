@@ -2,53 +2,53 @@
 
 English | [简体中文](README_zh-Hans.md) | [繁體中文](README_zh-Hant.md)
 
-## Install dependencies
+## Install Xray
 
-### Install cURL
+#### Install cURL
 
 ```sh
 apk add curl
 ```
 
-## Download
+#### Download Installation Script
 
 ```sh
 curl -O https://raw.githubusercontent.com/XTLS/Xray-install/main/alpinelinux/install-release.sh
 ```
 
-## Use
+#### Run Installation Script
 
 ```sh
 ash install-release.sh
 ```
 
-## Commands
+## Management Commands
 
-### Enable
+#### Enable Xray Service (Auto-start on Boot)
 
 ```sh
 rc-update add xray
 ```
 
-### Disable
+#### Disable Xray Service (Remove from Auto-start)
 
 ```sh
 rc-update del xray
 ```
 
-### Start
+#### Start Xray
 
 ```sh
 rc-service xray start
 ```
 
-### Stop
+#### Stop Xray
 
 ```sh
 rc-service xray stop
 ```
 
-### Restart
+#### Restart Xray
 
 ```sh
 rc-service xray restart
