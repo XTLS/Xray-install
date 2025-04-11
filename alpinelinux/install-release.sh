@@ -3,10 +3,6 @@
 
 set -euxo pipefail
 
-TMP_DIRECTORY="$(mktemp -d)/"
-ZIP_FILE="${TMP_DIRECTORY}Xray-linux-$MACHINE.zip"
-DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$MACHINE.zip"
-
 check_alpine() {
     if [ -f /etc/alpine-release ]; then
         return 0
@@ -214,6 +210,11 @@ main() {
     check_if_running_as_root || return 1
     identify_architecture || return 1
     install_software
+
+    TMP_DIRECTORY="$(mktemp -d)/"
+    ZIP_FILE="${TMP_DIRECTORY}Xray-linux-$MACHINE.zip"
+    DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$MACHINE.zip"
+
     download_xray
     verification_xray
     decompression
