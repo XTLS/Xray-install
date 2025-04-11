@@ -1,10 +1,14 @@
 # Xray-install
 
-English | [简体中文](README_zh-Hans.md) | [繁體中文](README_zh-Hant.md)
+[English](README.md) | [简体中文](README_zh-Hans.md) | 繁體中文
 
 用於在支持 systemd 的作業系統（如 CentOS / Debian / OpenSUSE）中安裝 Xray 的 Bash 腳本。
 
-[檔案系統層次結構標準 (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)
+**對於 Alpine Linux 使用者**，請參考 **[Alpine Linux 專用說明](alpinelinux/README_zh-Hant.md)** 以獲取適用於 Alpine Linux 的安裝腳本和指南。
+
+---
+
+#### [檔案系統層次結構標準 (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)
 
 ```
 已安裝檔案：

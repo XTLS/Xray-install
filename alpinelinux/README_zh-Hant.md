@@ -1,4 +1,4 @@
-# alpinelinux-install-xray
+# Xray-install for Alpine Linux
 
 [English](README.md) | [简体中文](README_zh-Hans.md) | 繁體中文
 
