@@ -58,6 +58,14 @@ TMP_DIRECTORY="$(mktemp -d)/"
 ZIP_FILE="${TMP_DIRECTORY}Xray-linux-$MACHINE.zip"
 DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$MACHINE.zip"
 
+check_alpine() {
+    if [ -f /etc/alpine-release ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 install_software() {
     if [[ -n "$(command -v curl)" ]]; then
         return
@@ -183,7 +191,7 @@ information() {
 }
 
 main() {
-    install_software
+    check_alpine || return 1
     install_software
     download_xray
     verification_xray
