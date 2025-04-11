@@ -101,12 +101,12 @@ install_dependencies() {
 
 download_xray() {
     echo "Downloading Xray files..."
-    if ! curl -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK" -#; then
+    if ! curl -f -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK" -#; then
         echo 'error: Download failed! Please check your network or try again.'
         exit 1
     fi
 
-    if ! curl -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE.dgst" "$DOWNLOAD_LINK.dgst" -#; then
+    if ! curl -f -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE.dgst" "$DOWNLOAD_LINK.dgst" -#; then
         echo 'error: Download failed! Please check your network or try again.'
         exit 1
     fi
@@ -165,7 +165,7 @@ install_startup_service_file() {
     OPENRC='0'
     if [ ! -f '/etc/init.d/xray' ]; then
         mkdir "${TMP_DIRECTORY}init.d/"
-        if ! curl -o "${TMP_DIRECTORY}init.d/xray" https://raw.githubusercontent.com/XTLS/Xray-install/main/alpinelinux/init.d/xray -s; then
+        if ! curl -f -L -o "${TMP_DIRECTORY}init.d/xray" https://raw.githubusercontent.com/XTLS/Xray-install/main/alpinelinux/init.d/xray -sS; then
             echo 'error: Failed to start service file download! Please check your network or try again.'
             exit 1
         fi
