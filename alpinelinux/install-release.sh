@@ -83,7 +83,7 @@ identify_architecture() {
     fi
 }
 
-install_software() {
+install_dependencies() {
     if [ -n "$(command -v curl)" ]; then
         return
     fi
@@ -91,6 +91,7 @@ install_software() {
         return
     fi
     if [ "$(command -v apk)" ]; then
+        echo "Installing required dependencies..."
         apk add curl unzip
     else
         echo "error: The script does not support the package manager in this operating system."
@@ -99,6 +100,7 @@ install_software() {
 }
 
 download_xray() {
+    echo "Downloading Xray files..."
     if ! curl -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK" -#; then
         echo 'error: Download failed! Please check your network or try again.'
         exit 1
@@ -134,8 +136,8 @@ is_it_running() {
 install_xray() {
     install -m 755 "${TMP_DIRECTORY}xray" "/usr/local/bin/xray"
     install -d /usr/local/share/xray/
-    install -m 755 "${TMP_DIRECTORY}geoip.dat" "/usr/local/share/xray/geoip.dat"
-    install -m 755 "${TMP_DIRECTORY}geosite.dat" "/usr/local/share/xray/geosite.dat"
+    install -m 644 "${TMP_DIRECTORY}geoip.dat" "/usr/local/share/xray/geoip.dat"
+    install -m 644 "${TMP_DIRECTORY}geosite.dat" "/usr/local/share/xray/geosite.dat"
 }
 
 install_confdir() {
@@ -209,7 +211,7 @@ main() {
     check_alpine || return 1
     check_if_running_as_root || return 1
     identify_architecture || return 1
-    install_software
+    install_dependencies
 
     TMP_DIRECTORY="$(mktemp -d)/"
     ZIP_FILE="${TMP_DIRECTORY}Xray-linux-$MACHINE.zip"
@@ -222,7 +224,7 @@ main() {
     install_xray
     install_confdir
     install_log
-    install_startup_service_file
+    install_startup_service_file || return 1
     information
 }
 
