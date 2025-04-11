@@ -66,6 +66,16 @@ check_alpine() {
     fi
 }
 
+check_if_running_as_root() {
+    # If you want to run as another user, please modify $EUID to be owned by this user
+    if [ "$(id -u)" -eq 0 ]; then
+        return 0
+    else
+        echo "error: You must run this script as root!"
+        return 1
+    fi
+}
+
 install_software() {
     if [[ -n "$(command -v curl)" ]]; then
         return
@@ -192,6 +202,7 @@ information() {
 
 main() {
     check_alpine || return 1
+    check_if_running_as_root || return 1
     install_software
     download_xray
     verification_xray
