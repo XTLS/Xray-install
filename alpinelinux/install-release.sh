@@ -115,7 +115,7 @@ download_xray() {
 }
 
 verification_xray() {
-    CHECKSUM=$(cat "$ZIP_FILE".dgst | awk -F '= ' '/256=/ {print $2}')
+    CHECKSUM=$(awk -F '= ' '/256=/ {print $2}' "$ZIP_FILE.dgst")
     LOCALSUM=$(sha256sum "$ZIP_FILE" | awk '{printf $1}')
     if [ "$CHECKSUM" != "$LOCALSUM" ]; then
         echo 'error: SHA256 check failed! Please check your network or try again.'
