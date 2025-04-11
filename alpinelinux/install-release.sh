@@ -1,7 +1,7 @@
 #!/usr/bin/env ash
 # shellcheck shell=dash
 
-set -euxo pipefail
+set -euo pipefail
 
 check_alpine() {
     if [ -f /etc/alpine-release ]; then
