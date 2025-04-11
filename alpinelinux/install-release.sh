@@ -4,54 +4,54 @@ set -euxo pipefail
 
 # Identify architecture
 case "$(arch -s)" in
-    'i386' | 'i686')
-        MACHINE='32'
-        ;;
-    'amd64' | 'x86_64')
-        MACHINE='64'
-        ;;
-    'armv5tel')
-        MACHINE='arm32-v5'
-        ;;
-    'armv6l')
-        MACHINE='arm32-v6'
-        grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
-        ;;
-    'armv7' | 'armv7l')
-        MACHINE='arm32-v7a'
-        grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
-        ;;
-    'armv8' | 'aarch64')
-        MACHINE='arm64-v8a'
-        ;;
-    'mips')
-        MACHINE='mips32'
-        ;;
-    'mipsle')
-        MACHINE='mips32le'
-        ;;
-    'mips64')
-        MACHINE='mips64'
-        ;;
-    'mips64le')
-        MACHINE='mips64le'
-        ;;
-    'ppc64')
-        MACHINE='ppc64'
-        ;;
-    'ppc64le')
-        MACHINE='ppc64le'
-        ;;
-    'riscv64')
-        MACHINE='riscv64'
-        ;;
-    's390x')
-        MACHINE='s390x'
-        ;;
-    *)
-        echo "error: The architecture is not supported."
-        exit 1
-        ;;
+'i386' | 'i686')
+    MACHINE='32'
+    ;;
+'amd64' | 'x86_64')
+    MACHINE='64'
+    ;;
+'armv5tel')
+    MACHINE='arm32-v5'
+    ;;
+'armv6l')
+    MACHINE='arm32-v6'
+    grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+    ;;
+'armv7' | 'armv7l')
+    MACHINE='arm32-v7a'
+    grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+    ;;
+'armv8' | 'aarch64')
+    MACHINE='arm64-v8a'
+    ;;
+'mips')
+    MACHINE='mips32'
+    ;;
+'mipsle')
+    MACHINE='mips32le'
+    ;;
+'mips64')
+    MACHINE='mips64'
+    ;;
+'mips64le')
+    MACHINE='mips64le'
+    ;;
+'ppc64')
+    MACHINE='ppc64'
+    ;;
+'ppc64le')
+    MACHINE='ppc64le'
+    ;;
+'riscv64')
+    MACHINE='riscv64'
+    ;;
+'s390x')
+    MACHINE='s390x'
+    ;;
+*)
+    echo "error: The architecture is not supported."
+    exit 1
+    ;;
 esac
 
 TMP_DIRECTORY="$(mktemp -d)/"
@@ -87,12 +87,12 @@ download_xray() {
 }
 
 verification_xray() {
-  CHECKSUM=$(cat "$ZIP_FILE".dgst | awk -F '= ' '/256=/ {print $2}')
-  LOCALSUM=$(sha256sum "$ZIP_FILE" | awk '{printf $1}')
-  if [[ "$CHECKSUM" != "$LOCALSUM" ]]; then
-    echo 'error: SHA256 check failed! Please check your network or try again.'
-    return 1
-  fi
+    CHECKSUM=$(cat "$ZIP_FILE".dgst | awk -F '= ' '/256=/ {print $2}')
+    LOCALSUM=$(sha256sum "$ZIP_FILE" | awk '{printf $1}')
+    if [[ "$CHECKSUM" != "$LOCALSUM" ]]; then
+        echo 'error: SHA256 check failed! Please check your network or try again.'
+        return 1
+    fi
 }
 
 decompression() {
@@ -119,7 +119,7 @@ install_confdir() {
     if [ ! -d '/usr/local/etc/xray/' ]; then
         install -d /usr/local/etc/xray/
         for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_transport 08_stats 09_reverse; do
-            echo '{}' > "/usr/local/etc/xray/$BASE.json"
+            echo '{}' >"/usr/local/etc/xray/$BASE.json"
         done
         CONFDIR='1'
     fi
@@ -139,7 +139,7 @@ install_startup_service_file() {
     OPENRC='0'
     if [ ! -f '/etc/init.d/xray' ]; then
         mkdir "${TMP_DIRECTORY}init.d/"
-        curl -o "${TMP_DIRECTORY}init.d/xray" https://raw.githubusercontent.com/XTLS/alpinelinux-install-xray/main/init.d/xray -s
+        curl -o "${TMP_DIRECTORY}init.d/xray" https://raw.githubusercontent.com/XTLS/Xray-install/main/alpinelinux/init.d/xray -s
         if [ "$?" -ne '0' ]; then
             echo 'error: Failed to start service file download! Please check your network or try again.'
             exit 1
