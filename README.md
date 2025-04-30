@@ -1,8 +1,14 @@
 # Xray-install
 
+English | [简体中文](README_zh-Hans.md) | [繁體中文](README_zh-Hant.md)
+
 Bash script for installing Xray in operating systems such as CentOS / Debian / OpenSUSE that support systemd.
 
-[Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)
+**For Alpine Linux users**, please refer to **[Alpine Linux Specific Instructions](alpinelinux/README.md)** for installation scripts and guides tailored for Alpine Linux.
+
+---
+
+#### [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)
 
 ```
 installed: /etc/systemd/system/xray.service
@@ -53,6 +59,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --logrotate $time
 ```
+
 ```
 installed: /etc/systemd/system/logrotate@.service
 installed: /etc/systemd/system/logrotate@.timer
