@@ -722,13 +722,13 @@ install_geodata() {
 check_update() {
   if [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '1' ]]; then
     get_current_version
-    echo "info: The current version of Xray is $CURRENT_VERSION ."
+    echo "info: The current version of Xray is ${CURRENT_VERSION}."
   else
     echo 'warning: Xray is not installed.'
   fi
   get_latest_version
-  echo "info: The latest release version of Xray is $RELEASE_LATEST ."
-  echo "info: The latest pre-release/release version of Xray is $PRE_RELEASE_LATEST ."
+  echo "info: The latest release version of Xray is ${RELEASE_LATEST}."
+  echo "info: The latest pre-release/release version of Xray is ${PRE_RELEASE_LATEST}."
   exit 0
 }
 
@@ -866,7 +866,7 @@ main() {
     elif [[ -n "$SPECIFIED_VERSION" ]]; then
       SPECIFIED_VERSION="v${SPECIFIED_VERSION#v}"
       if [[ "$CURRENT_VERSION" == "$SPECIFIED_VERSION" ]] && [[ "$FORCE" -eq '0' ]]; then
-        echo "info: The current version is same as the specified version. The version is $CURRENT_VERSION ."
+        echo "info: The current version is same as the specified version. The version is ${CURRENT_VERSION}."
         exit 0
       fi
       INSTALL_VERSION="$SPECIFIED_VERSION"
@@ -880,7 +880,7 @@ main() {
         INSTALL_VERSION="$PRE_RELEASE_LATEST"
       fi
       if ! version_gt "$INSTALL_VERSION" "$CURRENT_VERSION" && [[ "$FORCE" -eq '0' ]]; then
-        echo "info: No new version. The current version of Xray is $CURRENT_VERSION ."
+        echo "info: No new version. The current version of Xray is ${CURRENT_VERSION}."
         exit 0
       fi
       echo "info: Installing Xray $INSTALL_VERSION for $(uname -m)"
