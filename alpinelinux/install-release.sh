@@ -165,7 +165,7 @@ install_startup_service_file() {
     OPENRC='0'
     if [ ! -f '/etc/init.d/xray' ]; then
         mkdir "${TMP_DIRECTORY}init.d/"
-        if ! curl -f -L -o "${TMP_DIRECTORY}init.d/xray" https://raw.githubusercontent.com/XTLS/Xray-install/main/alpinelinux/init.d/xray -sS; then
+        if ! curl -f -L -o "${TMP_DIRECTORY}init.d/xray" https://github.com/XTLS/Xray-install/raw/main/alpinelinux/init.d/xray -sS; then
             echo 'error: Failed to start service file download! Please check your network or try again.'
             exit 1
         fi

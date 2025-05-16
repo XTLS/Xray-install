@@ -7,7 +7,7 @@
 # https://github.com/XTLS/Xray-install
 
 # The URL of the script is:
-# https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh
+# https://github.com/XTLS/Xray-install/raw/main/install-release.sh
 
 # If the script executes incorrectly, go to:
 # https://github.com/XTLS/Xray-install/issues
@@ -131,55 +131,55 @@ identify_the_operating_system_and_architecture() {
     return 1
   fi
   case "$(uname -m)" in
-    'i386' | 'i686')
-      MACHINE='32'
-      ;;
-    'amd64' | 'x86_64')
-      MACHINE='64'
-      ;;
-    'armv5tel')
-      MACHINE='arm32-v5'
-      ;;
-    'armv6l')
-      MACHINE='arm32-v6'
-      grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
-      ;;
-    'armv7' | 'armv7l')
-      MACHINE='arm32-v7a'
-      grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
-      ;;
-    'armv8' | 'aarch64')
-      MACHINE='arm64-v8a'
-      ;;
-    'mips')
-      MACHINE='mips32'
-      ;;
-    'mipsle')
-      MACHINE='mips32le'
-      ;;
-    'mips64')
-      MACHINE='mips64'
-      lscpu | grep -q "Little Endian" && MACHINE='mips64le'
-      ;;
-    'mips64le')
-      MACHINE='mips64le'
-      ;;
-    'ppc64')
-      MACHINE='ppc64'
-      ;;
-    'ppc64le')
-      MACHINE='ppc64le'
-      ;;
-    'riscv64')
-      MACHINE='riscv64'
-      ;;
-    's390x')
-      MACHINE='s390x'
-      ;;
-    *)
-      echo "error: The architecture is not supported."
-      return 1
-      ;;
+  'i386' | 'i686')
+    MACHINE='32'
+    ;;
+  'amd64' | 'x86_64')
+    MACHINE='64'
+    ;;
+  'armv5tel')
+    MACHINE='arm32-v5'
+    ;;
+  'armv6l')
+    MACHINE='arm32-v6'
+    grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+    ;;
+  'armv7' | 'armv7l')
+    MACHINE='arm32-v7a'
+    grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+    ;;
+  'armv8' | 'aarch64')
+    MACHINE='arm64-v8a'
+    ;;
+  'mips')
+    MACHINE='mips32'
+    ;;
+  'mipsle')
+    MACHINE='mips32le'
+    ;;
+  'mips64')
+    MACHINE='mips64'
+    lscpu | grep -q "Little Endian" && MACHINE='mips64le'
+    ;;
+  'mips64le')
+    MACHINE='mips64le'
+    ;;
+  'ppc64')
+    MACHINE='ppc64'
+    ;;
+  'ppc64le')
+    MACHINE='ppc64le'
+    ;;
+  'riscv64')
+    MACHINE='riscv64'
+    ;;
+  's390x')
+    MACHINE='s390x'
+    ;;
+  *)
+    echo "error: The architecture is not supported."
+    return 1
+    ;;
   esac
   if [[ ! -f '/etc/os-release' ]]; then
     echo "error: Don't use outdated Linux distributions."
@@ -215,7 +215,7 @@ identify_the_operating_system_and_architecture() {
     PACKAGE_MANAGEMENT_INSTALL='pacman -Syy --noconfirm'
     PACKAGE_MANAGEMENT_REMOVE='pacman -Rsn'
     package_provide_tput='ncurses'
-    elif [[ "$(type -P emerge)" ]]; then
+  elif [[ "$(type -P emerge)" ]]; then
     PACKAGE_MANAGEMENT_INSTALL='emerge -qv'
     PACKAGE_MANAGEMENT_REMOVE='emerge -Cv'
     package_provide_tput='ncurses'
@@ -231,99 +231,99 @@ judgment_parameters() {
   local temp_version='0'
   while [[ "$#" -gt '0' ]]; do
     case "$1" in
-      'install')
-        INSTALL='1'
-        ;;
-      'install-geodata')
-        INSTALL_GEODATA='1'
-        ;;
-      'remove')
-        REMOVE='1'
-        ;;
-      'help')
-        HELP='1'
-        ;;
-      'check')
-        CHECK='1'
-        ;;
-      '--without-geodata')
-        NO_GEODATA='1'
-        ;;
-      '--without-logfiles')
-        NO_LOGFILES='1'
-        ;;
-      '--purge')
-        PURGE='1'
-        ;;
-      '--version')
-        if [[ -z "$2" ]]; then
-          echo "error: Please specify the correct version."
-          return 1
-        fi
-        temp_version='1'
-        SPECIFIED_VERSION="$2"
-        shift
-        ;;
-      '-f' | '--force')
-        FORCE='1'
-        ;;
-      '--beta')
-        BETA='1'
-        ;;
-      '-l' | '--local')
-        local_install='1'
-        if [[ -z "$2" ]]; then
-          echo "error: Please specify the correct local file."
-          return 1
-        fi
-        LOCAL_FILE="$2"
-        shift
-        ;;
-      '-p' | '--proxy')
-        if [[ -z "$2" ]]; then
-          echo "error: Please specify the proxy server address."
-          return 1
-        fi
-        PROXY="$2"
-        shift
-        ;;
-      '-u' | '--install-user')
-        if [[ -z "$2" ]]; then
-          echo "error: Please specify the install user.}"
-          return 1
-        fi
-        INSTALL_USER="$2"
-        shift
-        ;;
-      '--reinstall')
-        REINSTALL='1'
-        ;;
-      '--no-update-service')
-        N_UP_SERVICE='1'
-        ;;
-      '--logrotate')
-        if ! grep -qE '\b([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\b' <<< "$2";then
-          echo "error: Wrong format of time, it should be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
-          exit 1
-        fi
-        LOGROTATE='1'
-        LOGROTATE_TIME="$2"
-        shift
-        ;;
-      *)
-        echo "$0: unknown option -- -"
+    'install')
+      INSTALL='1'
+      ;;
+    'install-geodata')
+      INSTALL_GEODATA='1'
+      ;;
+    'remove')
+      REMOVE='1'
+      ;;
+    'help')
+      HELP='1'
+      ;;
+    'check')
+      CHECK='1'
+      ;;
+    '--without-geodata')
+      NO_GEODATA='1'
+      ;;
+    '--without-logfiles')
+      NO_LOGFILES='1'
+      ;;
+    '--purge')
+      PURGE='1'
+      ;;
+    '--version')
+      if [[ -z "$2" ]]; then
+        echo "error: Please specify the correct version."
         return 1
-        ;;
+      fi
+      temp_version='1'
+      SPECIFIED_VERSION="$2"
+      shift
+      ;;
+    '-f' | '--force')
+      FORCE='1'
+      ;;
+    '--beta')
+      BETA='1'
+      ;;
+    '-l' | '--local')
+      local_install='1'
+      if [[ -z "$2" ]]; then
+        echo "error: Please specify the correct local file."
+        return 1
+      fi
+      LOCAL_FILE="$2"
+      shift
+      ;;
+    '-p' | '--proxy')
+      if [[ -z "$2" ]]; then
+        echo "error: Please specify the proxy server address."
+        return 1
+      fi
+      PROXY="$2"
+      shift
+      ;;
+    '-u' | '--install-user')
+      if [[ -z "$2" ]]; then
+        echo "error: Please specify the install user.}"
+        return 1
+      fi
+      INSTALL_USER="$2"
+      shift
+      ;;
+    '--reinstall')
+      REINSTALL='1'
+      ;;
+    '--no-update-service')
+      N_UP_SERVICE='1'
+      ;;
+    '--logrotate')
+      if ! grep -qE '\b([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\b' <<<"$2"; then
+        echo "error: Wrong format of time, it should be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
+        exit 1
+      fi
+      LOGROTATE='1'
+      LOGROTATE_TIME="$2"
+      shift
+      ;;
+    *)
+      echo "$0: unknown option -- -"
+      return 1
+      ;;
     esac
     shift
   done
-  if ((INSTALL+INSTALL_GEODATA+HELP+CHECK+REMOVE==0)); then
+  if ((INSTALL + INSTALL_GEODATA + HELP + CHECK + REMOVE == 0)); then
     INSTALL='1'
-  elif ((INSTALL+INSTALL_GEODATA+HELP+CHECK+REMOVE>1)); then
+  elif ((INSTALL + INSTALL_GEODATA + HELP + CHECK + REMOVE > 1)); then
     echo 'You can only choose one action.'
     return 1
   fi
-  if [[ "$INSTALL" -eq '1' ]] && ((temp_version+local_install+REINSTALL+BETA>1)); then
+  if [[ "$INSTALL" -eq '1' ]] && ((temp_version + local_install + REINSTALL + BETA > 1)); then
     echo "--version,--reinstall,--beta and --local can't be used together."
     return 1
   fi
@@ -340,7 +340,7 @@ check_install_user() {
       INSTALL_USER='nobody'
     fi
   fi
-  if ! id "$INSTALL_USER" > /dev/null 2>&1; then
+  if ! id "$INSTALL_USER" >/dev/null 2>&1; then
     echo "the user '$INSTALL_USER' is not effective"
     exit 1
   fi
@@ -351,7 +351,7 @@ check_install_user() {
 install_software() {
   package_name="$1"
   file_to_detect="$2"
-  type -P "$file_to_detect" > /dev/null 2>&1 && return
+  type -P "$file_to_detect" >/dev/null 2>&1 && return
   if ${PACKAGE_MANAGEMENT_INSTALL} "$package_name" >/dev/null 2>&1; then
     echo "info: $package_name is installed."
   else
@@ -495,7 +495,7 @@ install_xray() {
   # shellcheck disable=SC2153
   if [[ -z "$JSONS_PATH" ]] && [[ ! -d "$JSON_PATH" ]]; then
     install -d "$JSON_PATH"
-    echo "{}" > "${JSON_PATH}/config.json"
+    echo "{}" >"${JSON_PATH}/config.json"
     CONFIG_NEW='1'
   fi
 
@@ -503,7 +503,7 @@ install_xray() {
   if [[ -n "$JSONS_PATH" ]] && [[ ! -d "$JSONS_PATH" ]]; then
     install -d "$JSONS_PATH"
     for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_transport 08_stats 09_reverse; do
-      echo '{}' > "${JSONS_PATH}/${BASE}.json"
+      echo '{}' >"${JSONS_PATH}/${BASE}.json"
     done
     CONFDIR='1'
   fi
@@ -532,7 +532,7 @@ install_startup_service_file() {
     temp_AmbientCapabilities="#${temp_AmbientCapabilities}"
     temp_NoNewPrivileges="#${temp_NoNewPrivileges}"
   fi
-cat > /etc/systemd/system/xray.service << EOF
+  cat >/etc/systemd/system/xray.service <<EOF
 [Unit]
 Description=Xray Service
 Documentation=https://github.com/xtls
@@ -552,7 +552,7 @@ LimitNOFILE=1000000
 [Install]
 WantedBy=multi-user.target
 EOF
-cat > /etc/systemd/system/xray@.service <<EOF
+  cat >/etc/systemd/system/xray@.service <<EOF
 [Unit]
 Description=Xray Service
 Documentation=https://github.com/xtls
@@ -643,9 +643,9 @@ stop_xray() {
 install_with_logrotate() {
   install_software 'logrotate' 'logrotate'
   if [[ -z "$LOGROTATE_TIME" ]]; then
-  LOGROTATE_TIME="00:00:00"
+    LOGROTATE_TIME="00:00:00"
   fi
-  cat <<EOF > /etc/systemd/system/logrotate@.service
+  cat <<EOF >/etc/systemd/system/logrotate@.service
 [Unit]
 Description=Rotate log files
 Documentation=man:logrotate(8)
@@ -654,7 +654,7 @@ Documentation=man:logrotate(8)
 Type=oneshot
 ExecStart=/usr/sbin/logrotate /etc/logrotate.d/%i
 EOF
-  cat <<EOF > /etc/systemd/system/logrotate@.timer
+  cat <<EOF >/etc/systemd/system/logrotate@.timer
 [Unit]
 Description=Run logrotate for %i logs
 
@@ -666,10 +666,10 @@ Persistent=true
 WantedBy=timers.target
 EOF
   if [[ ! -d '/etc/logrotate.d/' ]]; then
-      install -d -m 700 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" /etc/logrotate.d/
-      LOGROTATE_DIR='1'
+    install -d -m 700 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" /etc/logrotate.d/
+    LOGROTATE_DIR='1'
   fi
-  cat << EOF > /etc/logrotate.d/xray
+  cat <<EOF >/etc/logrotate.d/xray
 /var/log/xray/*.log {
     daily
     missingok
@@ -711,7 +711,7 @@ install_geodata() {
       exit 1
     fi
   done
-  cd - > /dev/null || exit 1
+  cd - >/dev/null || exit 1
   install -d "$DAT_PATH"
   install -m 644 "${dir_tmp}"/${file_dlc} "${DAT_PATH}"/${file_site}
   install -m 644 "${dir_tmp}"/${file_ip} "${DAT_PATH}"/${file_ip}
@@ -751,8 +751,8 @@ remove_xray() {
       [[ -f '/etc/systemd/system/logrotate@.timer' ]] && delete_files+=('/etc/systemd/system/logrotate@.timer')
     fi
     systemctl disable xray
-    if [[ -f '/etc/systemd/system/logrotate@.timer' ]] ; then
-      if ! systemctl stop logrotate@xray.timer && systemctl disable logrotate@xray.timer ; then
+    if [[ -f '/etc/systemd/system/logrotate@.timer' ]]; then
+      if ! systemctl stop logrotate@xray.timer && systemctl disable logrotate@xray.timer; then
         echo 'error: Stopping and disabling the logrotate service failed.'
         exit 1
       fi
@@ -762,8 +762,7 @@ remove_xray() {
       echo 'error: Failed to remove Xray.'
       exit 1
     else
-      for i in "${!delete_files[@]}"
-      do
+      for i in "${!delete_files[@]}"; do
         echo "removed: ${delete_files[$i]}"
       done
       systemctl daemon-reload
@@ -934,7 +933,7 @@ main() {
     echo 'installed: /etc/systemd/system/logrotate@.service'
     echo 'installed: /etc/systemd/system/logrotate@.timer'
     if [[ "$LOGROTATE_DIR" -eq '1' ]]; then
-    echo 'installed: /etc/logrotate.d/'
+      echo 'installed: /etc/logrotate.d/'
     fi
     echo 'installed: /etc/logrotate.d/xray'
     systemctl start logrotate@xray.timer
