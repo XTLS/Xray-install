@@ -116,7 +116,6 @@ systemd_cat_config() {
 }
 
 check_if_running_as_root() {
-  # If you want to run as another user, please modify $EUID to be owned by this user
   if [[ "$(id -u)" -eq 0 ]]; then
     return 0
   else
