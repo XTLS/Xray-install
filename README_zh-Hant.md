@@ -32,19 +32,19 @@
 **安裝並升級 Xray-core 和地理數據，預設使用 `User=nobody`，但不會覆蓋已有服務檔案中的 `User` 設定**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+bash -c "$(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install
 ```
 
 **僅更新 geoip.dat 和 geosite.dat**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install-geodata
+bash -c "$(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install-geodata
 ```
 
 **移除 Xray，但保留 json 設定檔案和日誌**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove
+bash -c "$(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ remove
 ```
 
 ## 進階用法
@@ -52,13 +52,13 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 **安裝並升級 Xray-core 到預發布版本**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --beta
+bash -c "$(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install --beta
 ```
 
 **安裝並升級 Xray-core 和地理數據，並啟用 `logrotate`，`$time` 可以是 12:34:56 格式的時間**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --logrotate $time
+bash -c "$(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install --logrotate $time
 ```
 
 ```
@@ -71,25 +71,25 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 **安裝並升級 Xray-core 和地理數據，使用 `User=root`，會覆蓋已有服務檔案中的 `User` 設定**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u root
+bash -c "$(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install -u root
 ```
 
 **安裝並升級 Xray-core，但不包含地理數據**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --without-geodata
+bash -c "$(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ install --without-geodata
 ```
 
 **移除 Xray，包括 json 設定檔案和日誌**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
+bash -c "$(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ remove --purge
 ```
 
 ## 更多用法
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ help
+bash -c "$(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)" @ help
 ```
 
 ## 星標趨勢圖

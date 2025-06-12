@@ -13,7 +13,7 @@ apk add curl
 #### Download Installation Script
 
 ```sh
-curl -O https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-release.sh
+curl -O https://raw.githubusercontent.com/XTLS/Xray-install/main/alpinelinux/install-release.sh
 ```
 
 #### Run Installation Script
