@@ -13,7 +13,7 @@ apk add curl
 #### 下載安裝腳本
 
 ```sh
-curl -O -L https://raw.githubusercontent.com/XTLS/Xray-install/main/alpinelinux/install-release.sh
+curl -OL https://raw.githubusercontent.com/XTLS/Xray-install/main/alpinelinux/install-release.sh
 ```
 
 #### 執行安裝腳本
