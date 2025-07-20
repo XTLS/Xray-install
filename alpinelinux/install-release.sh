@@ -12,7 +12,6 @@ check_alpine() {
 }
 
 check_if_running_as_root() {
-    # If you want to run as another user, please modify $EUID to be owned by this user
     if [ "$(id -u)" -eq 0 ]; then
         return 0
     else
@@ -154,10 +153,15 @@ install_confdir() {
 install_log() {
     LOG='0'
     if [ ! -d '/var/log/xray/' ]; then
-        install -d -o nobody -g nobody /var/log/xray/
+        install -d -m 755 -o 0 -g 0 /var/log/xray/
         install -m 600 -o nobody -g nobody /dev/null /var/log/xray/access.log
         install -m 600 -o nobody -g nobody /dev/null /var/log/xray/error.log
         LOG='1'
+    else
+        chown 0:0 /var/log/xray/
+        chmod 755 /var/log/xray/
+        chown nobody:nobody /var/log/xray/*.log
+        chmod 600 /var/log/xray/*.log
     fi
 }
 
