@@ -495,6 +495,7 @@ install_xray() {
   if [[ -z "$JSONS_PATH" ]] && [[ ! -d "$JSON_PATH" ]]; then
     install -d "$JSON_PATH"
     echo "{}" >"${JSON_PATH}/config.json"
+    chown "$INSTALL_USER_UID:$INSTALL_USER_GID" "${JSON_PATH}/config.json"
     CONFIG_NEW='1'
   fi
 
@@ -526,14 +527,6 @@ install_xray() {
 install_startup_service_file() {
   mkdir -p '/etc/systemd/system/xray.service.d'
   mkdir -p '/etc/systemd/system/xray@.service.d/'
-  local temp_CapabilityBoundingSet="CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
-  local temp_AmbientCapabilities="AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
-  local temp_NoNewPrivileges="NoNewPrivileges=true"
-  if [[ "$INSTALL_USER_UID" -eq '0' ]]; then
-    temp_CapabilityBoundingSet="#${temp_CapabilityBoundingSet}"
-    temp_AmbientCapabilities="#${temp_AmbientCapabilities}"
-    temp_NoNewPrivileges="#${temp_NoNewPrivileges}"
-  fi
   cat >/etc/systemd/system/xray.service <<EOF
 [Unit]
 Description=Xray Service
@@ -542,10 +535,34 @@ After=network.target nss-lookup.target
 
 [Service]
 User=$INSTALL_USER
-${temp_CapabilityBoundingSet}
-${temp_AmbientCapabilities}
-${temp_NoNewPrivileges}
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
+ReadWritePaths=/var/log/xray
+ProtectSystem=strict
+ProtectProc=invisible
+PrivateTmp=disconnected
+PrivateDevices=true
+DeviceAllow=/dev/net/tun rw
+ProtectControlGroups=true
+ProtectKernelTunables=true
+ProtectClock=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectHostname=true
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+SystemCallFilter=~@resources
+RestrictNamespaces=true
+SystemCallArchitectures=native
+ProcSubset=pid
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+IPAddressDeny=multicast
+MemoryDenyWriteExecute=true
+LockPersonality=true
+UMask=0077
 Restart=on-failure
 RestartPreventExitStatus=23
 LimitNPROC=10000
@@ -562,10 +579,35 @@ After=network.target nss-lookup.target
 
 [Service]
 User=$INSTALL_USER
-${temp_CapabilityBoundingSet}
-${temp_AmbientCapabilities}
-${temp_NoNewPrivileges}
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/%i.json
+ReadWritePaths=/var/log/xray
+ProtectSystem=strict
+ProtectProc=invisible
+PrivateTmp=disconnected
+PrivateDevices=true
+DeviceAllow=/dev/net/tun rw
+ProtectControlGroups=true
+ProtectKernelTunables=true
+ProtectClock=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectHostname=true
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+SystemCallFilter=~@resources
+RestrictNamespaces=true
+SystemCallArchitectures=native
+ProcSubset=pid
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+IPAddressDeny=multicast
+MemoryDenyWriteExecute=true
+LockPersonality=true
+UMask=0077
+RestrictSUIDSGID=true
 Restart=on-failure
 RestartPreventExitStatus=23
 LimitNPROC=10000
