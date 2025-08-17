@@ -527,6 +527,12 @@ install_xray() {
 install_startup_service_file() {
   mkdir -p '/etc/systemd/system/xray.service.d'
   mkdir -p '/etc/systemd/system/xray@.service.d/'
+  local temp_CapabilityBoundingSet="CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
+  local temp_AmbientCapabilities="AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
+  if [[ "$INSTALL_USER_UID" -eq '0' ]]; then
+    temp_CapabilityBoundingSet="CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH"
+    temp_AmbientCapabilities="AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH"
+  fi
   cat >/etc/systemd/system/xray.service <<EOF
 [Unit]
 Description=Xray Service
@@ -535,8 +541,8 @@ After=network.target nss-lookup.target
 
 [Service]
 User=$INSTALL_USER
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+${temp_CapabilityBoundingSet}
+${temp_AmbientCapabilities}
 NoNewPrivileges=true
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
 ReadWritePaths=/var/log/xray
@@ -579,8 +585,8 @@ After=network.target nss-lookup.target
 
 [Service]
 User=$INSTALL_USER
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+${temp_CapabilityBoundingSet}
+${temp_AmbientCapabilities}
 NoNewPrivileges=true
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/%i.json
 ReadWritePaths=/var/log/xray
