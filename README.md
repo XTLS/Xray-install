@@ -4,7 +4,7 @@ English | [简体中文](README_zh-Hans.md) | [繁體中文](README_zh-Hant.md)
 
 Bash script for installing Xray in operating systems such as CentOS / Debian / OpenSUSE that support systemd.
 
-**For Alpine Linux users**, please refer to **[Alpine Linux Specific Instructions](alpinelinux/README.md)** for installation scripts and guides tailored for Alpine Linux.
+**For Alpine or Gentoo Linux users**, please refer to **[OpenRC Specific Instructions](alpinelinux/README.md)** for installation scripts and guides tailored for Alpine/Gentoo Linux featured by OpenRC init-system.
 
 ---
 
