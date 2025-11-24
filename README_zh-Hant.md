@@ -4,7 +4,7 @@
 
 用於在支持 systemd 的作業系統（如 CentOS / Debian / OpenSUSE）中安裝 Xray 的 Bash 腳本。
 
-**對於 Alpine Linux 使用者**，請參考 **[Alpine Linux 專用說明](alpinelinux/README_zh-Hant.md)** 以獲取適用於 Alpine Linux 的安裝腳本和指南。
+**針對 Alpine 及 Gentoo Linux 使用者**，請參閱 **[OpenRC 專用說明](alpinelinux/README_zh-Hant.md)** 以獲取適用於 Alpine/Gentoo Linux 的安裝腳本與指南。
 
 ---
 
