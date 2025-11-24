@@ -4,33 +4,32 @@
 set -euo pipefail
 
 pkg_manager() {
-     local OP="$1" PM=apk
-     shift
-     if [ -f /etc/gentoo-release ]; then
-          PM=emerge
-          case "$OP" in
-          add)
-               OP='-v'
-          ;;
-          del)
-               OP='-C'
-          ;;
-          esac
-     fi
-     if [ -z "$@" ]; then
-          echo "$PM $OP"
-     else
-          $PM $OP $@
-     fi
+    local OP="$1" PM=apk
+    shift
+    if [ -f /etc/gentoo-release ]; then
+        PM=emerge
+        case "$OP" in
+        add)
+            OP='-v'
+            ;;
+        del)
+            OP='-C'
+            ;;
+        esac
+    fi
+    if [ $# -eq 0 ]; then
+        echo "$PM $OP"
+    else
+        $PM "$OP" "$@"
+    fi
 }
 
-
-check_distr() {
+check_distro() {
     if [ -z "$(command -v rc-service)" ]; then
-        echo "No OpenRC init-system detected"
+        echo "No OpenRC init-system detected."
         return 1
     fi
-    if [ -f /etc/alpine-release -o -f /etc/gentoo-release ]; then
+    if [ -f /etc/alpine-release ] || [ -f /etc/gentoo-release ]; then
         return 0
     else
         return 1
@@ -117,7 +116,7 @@ install_dependencies() {
     fi
     if [ "$(command -v apk)" ]; then
         echo "Installing required dependencies..."
-        pkg_manager add curl unzip #to generalize installation procedure
+        pkg_manager add curl unzip # to generalize installation procedure
     else
         echo "error: The script does not support the package manager in this operating system."
         exit 1
@@ -238,7 +237,7 @@ information() {
 }
 
 main() {
-    check_distr || return 1
+    check_distro || return 1
     check_if_running_as_root || return 1
     identify_architecture || return 1
     install_dependencies
