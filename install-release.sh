@@ -288,7 +288,7 @@ judgment_parameters() {
       ;;
     '-u' | '--install-user')
       if [[ -z "$2" ]]; then
-        echo "error: Please specify the install user.}"
+        echo "error: Please specify the install user."
         return 1
       fi
       INSTALL_USER="$2"
