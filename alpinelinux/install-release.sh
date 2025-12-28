@@ -158,6 +158,10 @@ is_it_running() {
 }
 
 install_xray() {
+    # Check if /usr/local/bin exists, if not, create it
+    if [ ! -d "/usr/local/bin" ]; then
+        install -d "/usr/local/bin"
+    fi
     install -m 755 "${TMP_DIRECTORY}xray" "/usr/local/bin/xray"
     install -d /usr/local/share/xray/
     install -m 644 "${TMP_DIRECTORY}geoip.dat" "/usr/local/share/xray/geoip.dat"

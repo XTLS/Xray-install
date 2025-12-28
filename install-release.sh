@@ -480,6 +480,10 @@ install_file() {
 }
 
 install_xray() {
+  # Check if /usr/local/bin exists, if not, create it
+  if [[ ! -d "/usr/local/bin" ]]; then
+    install -d "/usr/local/bin"
+  fi
   # Install Xray binary to /usr/local/bin/ and $DAT_PATH
   install_file xray
   # If the file exists, geoip.dat and geosite.dat will not be installed or updated
