@@ -550,6 +550,8 @@ Restart=on-failure
 RestartPreventExitStatus=23
 LimitNPROC=10000
 LimitNOFILE=1000000
+RuntimeDirectory=xray
+RuntimeDirectoryMode=0755
 
 [Install]
 WantedBy=multi-user.target
@@ -570,6 +572,8 @@ Restart=on-failure
 RestartPreventExitStatus=23
 LimitNPROC=10000
 LimitNOFILE=1000000
+RuntimeDirectory=xray-%i
+RuntimeDirectoryMode=0755
 
 [Install]
 WantedBy=multi-user.target
