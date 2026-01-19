@@ -108,10 +108,7 @@ identify_architecture() {
 }
 
 install_dependencies() {
-    if [ -n "$(command -v curl)" ]; then
-        return
-    fi
-    if [ -n "$(command -v unzip)" ]; then
+    if [ -n "$(command -v curl)" ] && [ -n "$(command -v unzip)" ]; then
         return
     fi
     if [ "$(command -v apk)" ]; then
