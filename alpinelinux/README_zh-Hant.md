@@ -1,4 +1,4 @@
-# Xray-install for Alpine Linux
+# Xray-install for Alpine Linux / Gentoo
 
 [English](README.md) | [简体中文](README_zh-Hans.md) | 繁體中文
 
@@ -6,8 +6,16 @@
 
 #### 安裝 cURL
 
+**Alpine Linux:**
+
 ```sh
 apk add curl
+```
+
+**Gentoo:**
+
+```sh
+emerge net-misc/curl
 ```
 
 #### 下載安裝腳本
@@ -19,7 +27,7 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 #### 執行安裝腳本
 
 ```sh
-ash install-release.sh
+sh install-release.sh
 ```
 
 ## 管理指令
