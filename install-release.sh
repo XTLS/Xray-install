@@ -97,6 +97,9 @@ PROXY=''
 # --purge
 PURGE='0'
 
+# --manually-restart-later
+NO_RESTART='0'
+
 curl() {
   $(type -P curl) -L -q --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
 }
@@ -309,6 +312,9 @@ judgment_parameters() {
       LOGROTATE_TIME="$2"
       shift
       ;;
+    '--manually-restart-later')
+      NO_RESTART='1'
+      ;;
     *)
       echo "$0: unknown option -- -"
       return 1
@@ -324,6 +330,14 @@ judgment_parameters() {
   fi
   if [[ "$INSTALL" -eq '1' ]] && ((temp_version + local_install + REINSTALL + BETA > 1)); then
     echo "--version,--reinstall,--beta and --local can't be used together."
+    return 1
+  fi
+  if [[ "$INSTALL" -eq '1' ]] && ((FORCE + NO_RESTART > 1)); then
+    echo "-f/--force and --manually-restart-later can't be used together."
+    return 1
+  fi
+  if [[ "$INSTALL" -eq '1' ]] && ((REINSTALL + NO_RESTART > 1)); then
+    echo "--reinstall and --manually-restart-later can't be used together."
     return 1
   fi
 }
@@ -816,6 +830,8 @@ show_help() {
   echo "    --without-logfiles        Don't install /var/log/xray"
   echo "    --logrotate [time]        Install with logrotate."
   echo "                              [time] need be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
+  echo "    --manually-restart-later  ${red}[RISKY]${reset} Service won't be restarted during installation."
+  echo "                              ${red}Inconsistency may occur. You must manually restart the service after the installation.${reset}"
   echo '  install-geodata:'
   echo '    -p, --proxy               Download through a proxy server'
   echo '  remove:'
@@ -903,7 +919,9 @@ main() {
   # Determine if Xray is running
   if systemctl list-unit-files | grep -qw 'xray'; then
     if [[ -n "$(pidof xray)" ]]; then
-      stop_xray
+      if [[ "$NO_RESTART" -eq '0' ]]; then
+        stop_xray
+      fi
       XRAY_RUNNING='1'
     fi
   fi
@@ -961,7 +979,14 @@ main() {
   echo "info: Xray $CURRENT_VERSION is installed."
   echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"
   if [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '1' ]] && [[ "$FORCE" -eq '0' ]] && [[ "$REINSTALL" -eq '0' ]]; then
-    [[ "$XRAY_RUNNING" -eq '1' ]] && start_xray
+    if [[ "$NO_RESTART" -eq '0' ]]; then
+      [[ "$XRAY_RUNNING" -eq '1' ]] && start_xray
+    else
+      if [[ "$XRAY_RUNNING" -eq '1' ]]; then
+        echo "${red}Xray has been installed but a service restart is required."
+        echo "${red}To prevent inconsistency, manually restart the service as soon as possible.${reset}"
+      fi
+    fi
   else
     systemctl start xray
     systemctl enable xray
