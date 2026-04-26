@@ -475,8 +475,12 @@ install_file() {
   if [[ "$NAME" == 'xray' ]]; then
     install -m 755 "${TMP_DIRECTORY}/$NAME" "/usr/local/bin/$NAME"
   elif [[ "$NAME" == 'geoip.dat' ]] || [[ "$NAME" == 'geosite.dat' ]]; then
-    install -m 644 "${TMP_DIRECTORY}/$NAME" "${DAT_PATH}/$NAME"
+    install -m 644 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "${TMP_DIRECTORY}/$NAME" "${DAT_PATH}/$NAME"
   fi
+}
+
+install_geodata_dir() {
+  install -d -m 755 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "$DAT_PATH"
 }
 
 install_xray() {
@@ -484,7 +488,7 @@ install_xray() {
   install_file xray
   # If the file exists, geoip.dat and geosite.dat will not be installed or updated
   if [[ "$NO_GEODATA" -eq '0' ]] && [[ ! -f "${DAT_PATH}/.undat" ]]; then
-    install -d "$DAT_PATH"
+    install_geodata_dir
     install_file geoip.dat
     install_file geosite.dat
     GEODATA='1'
@@ -718,9 +722,9 @@ install_geodata() {
     fi
   done
   cd - >/dev/null || exit 1
-  install -d "$DAT_PATH"
-  install -m 644 "${dir_tmp}"/${file_dlc} "${DAT_PATH}"/${file_site}
-  install -m 644 "${dir_tmp}"/${file_ip} "${DAT_PATH}"/${file_ip}
+  install_geodata_dir
+  install -m 644 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "${dir_tmp}"/${file_dlc} "${DAT_PATH}"/${file_site}
+  install -m 644 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "${dir_tmp}"/${file_ip} "${DAT_PATH}"/${file_ip}
   rm -r "${dir_tmp}"
   exit 0
 }
@@ -840,7 +844,10 @@ main() {
   [[ "$HELP" -eq '1' ]] && show_help
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_xray
-  [[ "$INSTALL_GEODATA" -eq '1' ]] && install_geodata
+  [[ "$INSTALL_GEODATA" -eq '1' ]] && {
+    check_install_user
+    install_geodata
+  }
 
   # Check if the user is effective
   check_install_user
