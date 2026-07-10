@@ -220,6 +220,7 @@ information() {
         echo 'installed: /usr/local/etc/xray/09_metrics.json'
         echo 'installed: /usr/local/etc/xray/10_observatory.json'
         echo 'installed: /usr/local/etc/xray/11_geodata.json'
+        echo 'installed: /usr/local/etc/xray/12_env.json'
         echo 'installed: /usr/local/etc/xray/99_version.json'
     fi
     if [ "$LOG" -eq '1' ]; then
