@@ -501,7 +501,7 @@ install_xray() {
   # Install Xray configuration file to $JSONS_PATH
   if [[ -n "$JSONS_PATH" ]] && [[ ! -d "$JSONS_PATH" ]]; then
     install -d "$JSONS_PATH"
-    for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_stats 08_fakedns 09_metrics 10_observatory 11_geodata 99_version; do
+    for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_stats 08_fakedns 09_metrics 10_observatory 11_geodata 12_env 99_version; do
       echo '{}' >"${JSONS_PATH}/${BASE}.json"
     done
     CONFDIR='1'
@@ -931,6 +931,7 @@ main() {
     echo "installed: ${JSON_PATH}/09_metrics.json"
     echo "installed: ${JSON_PATH}/10_observatory.json"
     echo "installed: ${JSON_PATH}/11_geodata.json"
+    echo "installed: ${JSON_PATH}/12_env.json"
     echo "installed: ${JSON_PATH}/99_version.json"
   fi
   if [[ "$LOG" -eq '1' ]]; then
