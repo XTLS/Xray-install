@@ -168,7 +168,7 @@ install_confdir() {
     CONFDIR='0'
     if [ ! -d '/usr/local/etc/xray/' ]; then
         install -d /usr/local/etc/xray/
-        for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_transport 08_stats 09_reverse; do
+        for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_stats 08_fakedns 09_metrics 10_observatory 11_geodata 12_env 99_version; do
             echo '{}' >"/usr/local/etc/xray/$BASE.json"
         done
         CONFDIR='1'
@@ -215,9 +215,13 @@ information() {
         echo 'installed: /usr/local/etc/xray/04_policy.json'
         echo 'installed: /usr/local/etc/xray/05_inbounds.json'
         echo 'installed: /usr/local/etc/xray/06_outbounds.json'
-        echo 'installed: /usr/local/etc/xray/07_transport.json'
-        echo 'installed: /usr/local/etc/xray/08_stats.json'
-        echo 'installed: /usr/local/etc/xray/09_reverse.json'
+        echo 'installed: /usr/local/etc/xray/07_stats.json'
+        echo 'installed: /usr/local/etc/xray/08_fakedns.json'
+        echo 'installed: /usr/local/etc/xray/09_metrics.json'
+        echo 'installed: /usr/local/etc/xray/10_observatory.json'
+        echo 'installed: /usr/local/etc/xray/11_geodata.json'
+        echo 'installed: /usr/local/etc/xray/12_env.json'
+        echo 'installed: /usr/local/etc/xray/99_version.json'
     fi
     if [ "$LOG" -eq '1' ]; then
         echo 'installed: /var/log/xray/'
