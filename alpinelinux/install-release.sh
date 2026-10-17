@@ -351,6 +351,7 @@ install_confdir() {
     if [ ! -d '/usr/local/etc/xray/' ]; then
         install -d /usr/local/etc/xray/
         for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_stats 08_fakedns 09_metrics 10_observatory 11_geodata 12_env 99_version; do
+            install -m 644 -o 0 -g 0 /dev/null "/usr/local/etc/xray/$BASE.json"
             echo '{}' >"/usr/local/etc/xray/$BASE.json"
         done
         CONFDIR='1'

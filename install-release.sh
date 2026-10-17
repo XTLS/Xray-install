@@ -560,6 +560,7 @@ install_xray() {
   # shellcheck disable=SC2153
   if [[ -z "$JSONS_PATH" ]] && [[ ! -d "$JSON_PATH" ]]; then
     install -d "$JSON_PATH"
+    install -m 644 -o 0 -g 0 /dev/null "${JSON_PATH}/config.json"
     echo "{}" >"${JSON_PATH}/config.json"
     CONFIG_NEW='1'
   fi
@@ -568,6 +569,7 @@ install_xray() {
   if [[ -n "$JSONS_PATH" ]] && [[ ! -d "$JSONS_PATH" ]]; then
     install -d "$JSONS_PATH"
     for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_stats 08_fakedns 09_metrics 10_observatory 11_geodata 12_env 99_version; do
+      install -m 644 -o 0 -g 0 /dev/null "${JSONS_PATH}/${BASE}.json"
       echo '{}' >"${JSONS_PATH}/${BASE}.json"
     done
     CONFDIR='1'
