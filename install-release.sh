@@ -701,7 +701,7 @@ start_xray() {
 
 stop_xray() {
   local xray_units
-  xray_units="$(systemctl list-units | awk '$1 ~ /^xray@.*\.service$/ {print $1}')"
+  xray_units="$(systemctl list-units | awk '$1 == "xray.service" || $1 ~ /^xray@.*\.service$/ {print $1}')"
   XRAY_CUSTOMIZE=()
   if [[ -n "$xray_units" ]]; then
     readarray -t XRAY_CUSTOMIZE <<<"$xray_units"
