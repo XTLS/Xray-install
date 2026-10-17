@@ -260,11 +260,26 @@ decompression() {
 }
 
 is_it_running() {
-    XRAY_RUNNING='0'
-    if [ -n "$(pgrep xray)" ]; then
-        rc-service xray stop
-        XRAY_RUNNING='1'
+    local service
+    XRAY_RUNNING="$(
+        for service in /etc/init.d/xray /etc/init.d/xray.*; do
+            [ -f "$service" ] || continue
+            service="${service##*/}"
+            if rc-service "$service" status >/dev/null 2>&1; then
+                printf '%s\n' "$service"
+            fi
+        done
+    )"
+    if [ -n "$XRAY_RUNNING" ]; then
+        manage_xray_services stop
     fi
+}
+
+manage_xray_services() {
+    local action="$1" service
+    printf '%s\n' "$XRAY_RUNNING" | while IFS= read -r service; do
+        rc-service "$service" "$action"
+    done
 }
 
 install_xray() {
@@ -345,7 +360,14 @@ capabilities="^cap_net_bind_service,^cap_net_admin,^cap_net_raw"
 extra_commands="checkconfig"
 
 env=${env:-"XRAY_LOCATION_ASSET=/usr/local/share/xray/"} # See: https://xtls.github.io/en/config/env.html
-confdir=${confdir:-"/usr/local/etc/xray/"}
+case "$RC_SVCNAME" in
+xray.*)
+	confdir=${confdir:-"/usr/local/etc/xray/${RC_SVCNAME#xray.}/"}
+	;;
+*)
+	confdir=${confdir:-"/usr/local/etc/xray/"}
+	;;
+esac
 command="/usr/local/bin/xray"
 command_user="nobody:nobody"
 command_args="run -confdir $confdir"
@@ -404,8 +426,8 @@ information() {
     rm -r "$TMP_DIRECTORY"
     echo "removed: $TMP_DIRECTORY"
     echo "You may need to execute a command to remove dependent software: $(pkg_manager del) curl unzip"
-    if [ "$XRAY_RUNNING" -eq '1' ]; then
-        rc-service xray start
+    if [ -n "$XRAY_RUNNING" ]; then
+        manage_xray_services start
     else
         echo 'Please execute the command: rc-update add xray; rc-service xray start'
     fi

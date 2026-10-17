@@ -50,6 +50,16 @@ Alpine 會啟用 `crond`；Gentoo 需確保 cron 服務正在執行。
 
 ## 管理指令
 
+使用多實例時，將 `xray.a` 的設定放入 `/usr/local/etc/xray/a/`，在 `/etc/conf.d/xray.a` 中設定 `confdir="/usr/local/etc/xray/a/"`，然後執行：
+
+```sh
+ln -s xray /etc/init.d/xray.a
+rc-update add xray.a
+rc-service xray.a start
+```
+
+各實例可以使用不同的 `confdir`。升級僅停止並恢復原先執行中的實例，保留既有服務檔案。
+
 #### 啟用 Xray 服務 (開機自啟)
 
 ```sh
