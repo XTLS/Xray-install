@@ -93,6 +93,16 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
 ```
 
+## Multiple instances
+
+Set `JSONS_PATH` when installing to use configuration directories:
+
+```sh
+JSONS_PATH=/usr/local/etc/xray bash install-release.sh install
+```
+
+`xray.service` reads `JSONS_PATH`; `xray@a.service` reads `JSONS_PATH/a/`. Put each instance's configuration files in its directory, then start it with `systemctl enable --now xray@a`.
+
 ## More Usage
 
 ```

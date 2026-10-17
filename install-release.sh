@@ -673,9 +673,14 @@ EOF
 # Or all changes you made will be lost!  # Refer: https://www.freedesktop.org/software/systemd/man/systemd.unit.html
 [Service]
 ExecStart=
-ExecStart=/usr/local/bin/xray run -confdir $JSONS_PATH" |
-      tee '/etc/systemd/system/xray.service.d/10-donot_touch_multi_conf.conf' > \
-        '/etc/systemd/system/xray@.service.d/10-donot_touch_multi_conf.conf'
+ExecStart=/usr/local/bin/xray run -confdir $JSONS_PATH" > \
+      '/etc/systemd/system/xray.service.d/10-donot_touch_multi_conf.conf'
+    echo "# In case you have a good reason to do so, duplicate this file in the same directory and make your customizes there.
+# Or all changes you made will be lost!  # Refer: https://www.freedesktop.org/software/systemd/man/systemd.unit.html
+[Service]
+ExecStart=
+ExecStart=/usr/local/bin/xray run -confdir ${JSONS_PATH%/}/%i/" > \
+      '/etc/systemd/system/xray@.service.d/10-donot_touch_multi_conf.conf'
   else
     "rm" -f '/etc/systemd/system/xray.service.d/10-donot_touch_multi_conf.conf' \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_multi_conf.conf'

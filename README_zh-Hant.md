@@ -94,6 +94,16 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
 ```
 
+## 多實例
+
+安裝時設定 `JSONS_PATH` 以使用設定目錄：
+
+```sh
+JSONS_PATH=/usr/local/etc/xray bash install-release.sh install
+```
+
+`xray.service` 讀取 `JSONS_PATH`，`xray@a.service` 讀取 `JSONS_PATH/a/`。將各實例的設定放入對應目錄後，使用 `systemctl enable --now xray@a` 啟動。
+
 ## 更多用法
 
 ```
