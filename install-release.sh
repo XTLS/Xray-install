@@ -834,7 +834,7 @@ remove_xray() {
     fi
     systemctl disable xray
     if [[ -f '/etc/systemd/system/logrotate@.timer' ]]; then
-      if ! systemctl stop logrotate@xray.timer && systemctl disable logrotate@xray.timer; then
+      if ! systemctl stop logrotate@xray.timer || ! systemctl disable logrotate@xray.timer; then
         echo 'error: Stopping and disabling the logrotate service failed.'
         exit 1
       fi
