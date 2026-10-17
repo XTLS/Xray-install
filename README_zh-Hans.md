@@ -47,6 +47,14 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove
 ```
 
+## 从本地压缩包安装（备选方式）
+
+下载[安装脚本](install-release.sh)及对应系统架构的 [Xray-core 压缩包](https://github.com/XTLS/Xray-core/releases)，以 root 身份运行。以下以 x86_64 为例：
+
+```sh
+bash install-release.sh install --local ./Xray-linux-64.zip
+```
+
 ## 高级用法
 
 **安装并升级 Xray-core 到预发布版本**

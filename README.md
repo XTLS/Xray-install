@@ -46,6 +46,14 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove
 ```
 
+## Install from a local archive (alternative)
+
+Download the [installation script](install-release.sh) and the [Xray-core zip](https://github.com/XTLS/Xray-core/releases) for your architecture, then run as root (x86_64 example):
+
+```sh
+bash install-release.sh install --local ./Xray-linux-64.zip
+```
+
 ## Advance
 
 **Install & Upgrade Xray-core to a pre-release version**

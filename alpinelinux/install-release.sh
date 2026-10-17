@@ -3,6 +3,7 @@
 
 set -euo pipefail
 
+LOCAL_FILE=''
 HELP='0'
 
 judgment_parameters() {
@@ -16,6 +17,16 @@ judgment_parameters() {
             fi
             action="$1"
             ;;
+        -l | --local)
+            case "${2:-}" in
+            '' | -*)
+                echo 'error: Please specify a local Xray zip file after --local.'
+                return 1
+                ;;
+            esac
+            LOCAL_FILE="$2"
+            shift
+            ;;
         *)
             echo "error: Unknown option: $1"
             return 1
@@ -24,13 +35,72 @@ judgment_parameters() {
         shift
     done
     if [ "$action" = help ]; then
+        if [ -n "$LOCAL_FILE" ]; then
+            echo 'error: --local can only be used with install.'
+            return 1
+        fi
         HELP='1'
     fi
 }
 
 show_help() {
-    echo "usage: $0 [install | help]"
+    echo "usage: $0 [install | help] [OPTION]..."
     echo 'With no action, install/update Xray from GitHub.'
+    echo '  -l, --local <zip>  Install a local Xray zip without accessing GitHub'
+    echo '                     Relative paths use the current working directory; quote paths containing spaces'
+    echo '                     Verify <zip>.dgst if present; warn and continue if absent'
+    echo '                     Missing tools may be installed from system package repositories'
+    echo '                     The archive must contain xray, geoip.dat and geosite.dat'
+}
+
+verify_local_archive() {
+    local digest_file="${LOCAL_FILE}.dgst" checksum local_sum
+    if [ ! -f "$LOCAL_FILE" ] || [ ! -r "$LOCAL_FILE" ]; then
+        echo "error: Local Xray archive is not a readable file: $LOCAL_FILE"
+        return 1
+    fi
+    if [ ! -e "$digest_file" ] && [ ! -L "$digest_file" ]; then
+        echo "warning: No local verification file found: $digest_file; continuing without SHA256 verification."
+        return 0
+    fi
+    if [ ! -f "$digest_file" ] || [ ! -r "$digest_file" ]; then
+        echo "error: Local verification file is not readable: $digest_file"
+        return 1
+    fi
+    checksum="$(awk -F '=' '/^[[:space:]]*SHA(2-)?256[[:space:]]*=/ {
+        if (NF != 2) { print "invalid"; next }
+        value = $2
+        sub(/^[[:space:]]*/, "", value)
+        sub(/[[:space:]]*$/, "", value)
+        print tolower(value)
+    }' "$digest_file")" || return 1
+    case "$checksum" in
+    '' | *[!0-9a-f]*)
+        echo "error: Missing or invalid SHA256 digest in $digest_file"
+        return 1
+        ;;
+    esac
+    if [ "${#checksum}" -ne 64 ]; then
+        echo "error: Missing or invalid SHA256 digest in $digest_file"
+        return 1
+    fi
+    if ! local_sum="$(sha256sum "$LOCAL_FILE")"; then
+        echo "error: Could not calculate SHA256 for $LOCAL_FILE"
+        return 1
+    fi
+    local_sum="${local_sum%% *}"
+    if [ "$checksum" != "$local_sum" ]; then
+        echo "error: SHA256 check failed for $LOCAL_FILE"
+        return 1
+    fi
+    echo 'info: Local Xray archive passed SHA256 verification.'
+}
+
+check_local_xray_version() {
+    if ! chmod u+x "$TMP_DIRECTORY/xray" || ! "$TMP_DIRECTORY/xray" -version >/dev/null 2>&1; then
+        echo 'error: Local xray binary cannot run. Please check its architecture and format.'
+        return 1
+    fi
 }
 
 pkg_manager() {
@@ -315,16 +385,28 @@ main() {
     check_distro || return 1
     check_if_running_as_root || return 1
     identify_architecture || return 1
-    install_dependencies curl unzip
+    if [ -n "$LOCAL_FILE" ]; then
+        verify_local_archive || return 1
+        install_dependencies unzip
+    else
+        install_dependencies curl unzip
+    fi
 
     TMP_DIRECTORY="$(mktemp -d)" || return 1
     TMP_DIRECTORY="${TMP_DIRECTORY}/"
     ZIP_FILE="${TMP_DIRECTORY}Xray-linux-$MACHINE.zip"
     DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$MACHINE.zip"
 
-    download_xray
-    verification_xray
+    if [ -n "$LOCAL_FILE" ]; then
+        ZIP_FILE="$LOCAL_FILE"
+    else
+        download_xray
+        verification_xray
+    fi
     decompression
+    if [ -n "$LOCAL_FILE" ]; then
+        check_local_xray_version || return 1
+    fi
     is_it_running
     install_xray
     install_confdir

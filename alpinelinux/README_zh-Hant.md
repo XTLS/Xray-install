@@ -30,6 +30,14 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 sh install-release.sh
 ```
 
+## 從本機壓縮檔安裝（備選方式）
+
+下載[安裝腳本](install-release.sh)及對應系統架構的 [Xray-core 壓縮檔](https://github.com/XTLS/Xray-core/releases)，以 root 身分執行。以下以 x86_64 為例：
+
+```sh
+sh install-release.sh --local ./Xray-linux-64.zip
+```
+
 ## 管理指令
 
 #### 啟用 Xray 服務 (開機自啟)
