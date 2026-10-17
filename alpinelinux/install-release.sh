@@ -108,16 +108,17 @@ identify_architecture() {
 }
 
 install_dependencies() {
-    if [ -n "$(command -v curl)" ] && [ -n "$(command -v unzip)" ]; then
-        return
-    fi
-    if [ "$(command -v apk)" ]; then
-        echo "Installing required dependencies..."
-        pkg_manager add curl unzip # to generalize installation procedure
-    else
-        echo "error: The script does not support the package manager in this operating system."
-        exit 1
-    fi
+    local dependency
+    for dependency do
+        if command -v "$dependency" >/dev/null 2>&1; then
+            continue
+        fi
+        echo "Installing required dependency: $dependency"
+        if ! pkg_manager add "$dependency"; then
+            echo "error: Installation of $dependency failed, please check your system package repositories."
+            exit 1
+        fi
+    done
 }
 
 download_xray() {
@@ -241,7 +242,7 @@ main() {
     check_distro || return 1
     check_if_running_as_root || return 1
     identify_architecture || return 1
-    install_dependencies
+    install_dependencies curl unzip
 
     TMP_DIRECTORY="$(mktemp -d)" || return 1
     TMP_DIRECTORY="${TMP_DIRECTORY}/"
