@@ -21,8 +21,7 @@
 - /usr/local/share/xray/geoip.dat
 - /usr/local/share/xray/geosite.dat
 
-- /var/log/xray/access.log
-- /var/log/xray/error.log
+- /var/log/xray/
 ```
 
 注意：Xray 預設不會將日誌記錄到 `/var/log/xray/*.log`。請配置 `"log"` 來指定日誌檔案。

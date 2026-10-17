@@ -362,8 +362,6 @@ install_log() {
     LOG='0'
     if [ ! -d '/var/log/xray/' ]; then
         install -d -m 700 -o xray -g xray /var/log/xray/
-        install -m 600 -o xray -g xray /dev/null /var/log/xray/access.log
-        install -m 600 -o xray -g xray /dev/null /var/log/xray/error.log
         LOG='1'
     else
         chown -hR xray:xray /var/log/xray/

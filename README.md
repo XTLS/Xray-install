@@ -20,8 +20,7 @@ installed: /usr/local/etc/xray/*.json
 installed: /usr/local/share/xray/geoip.dat
 installed: /usr/local/share/xray/geosite.dat
 
-installed: /var/log/xray/access.log
-installed: /var/log/xray/error.log
+installed: /var/log/xray/
 ```
 
 Notice: Xray will NOT log to `/var/log/xray/*.log` by default. Configure `"log"` to specify log files.

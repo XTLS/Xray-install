@@ -579,8 +579,6 @@ install_xray() {
   if [[ "$NO_LOGFILES" -eq '0' ]]; then
     if [[ ! -d '/var/log/xray/' ]]; then
       install -d -m 700 -o xray -g xray /var/log/xray/
-      install -m 600 -o xray -g xray /dev/null /var/log/xray/access.log
-      install -m 600 -o xray -g xray /dev/null /var/log/xray/error.log
       LOG='1'
     else
       chown -hR xray:xray /var/log/xray/
@@ -1008,8 +1006,6 @@ main() {
   fi
   if [[ "$LOG" -eq '1' ]]; then
     echo 'installed: /var/log/xray/'
-    echo 'installed: /var/log/xray/access.log'
-    echo 'installed: /var/log/xray/error.log'
   fi
   if [[ "$LOGROTATE_FIN" -eq '1' ]]; then
     echo 'installed: /etc/systemd/system/logrotate@.service'
