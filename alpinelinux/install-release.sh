@@ -243,7 +243,8 @@ main() {
     identify_architecture || return 1
     install_dependencies
 
-    TMP_DIRECTORY="$(mktemp -d)/"
+    TMP_DIRECTORY="$(mktemp -d)" || return 1
+    TMP_DIRECTORY="${TMP_DIRECTORY}/"
     ZIP_FILE="${TMP_DIRECTORY}Xray-linux-$MACHINE.zip"
     DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$MACHINE.zip"
 

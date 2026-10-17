@@ -856,7 +856,7 @@ main() {
   [[ "$LOGROTATE" -eq '1' ]] && install_with_logrotate
 
   # Two very important variables
-  TMP_DIRECTORY="$(mktemp -d)"
+  TMP_DIRECTORY="$(mktemp -d)" || return 1
   ZIP_FILE="${TMP_DIRECTORY}/Xray-linux-$MACHINE.zip"
 
   # Install Xray from a local file, but still need to make sure the network is available
@@ -972,7 +972,9 @@ main() {
   echo "info: Xray $CURRENT_VERSION is installed."
   echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"
   if [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '1' ]] && [[ "$FORCE" -eq '0' ]] && [[ "$REINSTALL" -eq '0' ]]; then
-    [[ "$XRAY_RUNNING" -eq '1' ]] && start_xray
+    if [[ "$XRAY_RUNNING" -eq '1' ]]; then
+      start_xray
+    fi
   else
     systemctl start xray
     systemctl enable xray
