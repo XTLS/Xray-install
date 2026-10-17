@@ -830,9 +830,10 @@ show_help() {
 }
 
 main() {
+  judgment_parameters "$@" || return 1
+  [[ "$HELP" -eq '1' ]] && show_help
   check_if_running_as_root || return 1
   identify_the_operating_system_and_architecture || return 1
-  judgment_parameters "$@" || return 1
 
   install_software "$package_provide_tput" 'tput'
   red=$(tput setaf 1)
@@ -841,7 +842,6 @@ main() {
   reset=$(tput sgr0)
 
   # Parameter information
-  [[ "$HELP" -eq '1' ]] && show_help
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_xray
   [[ "$INSTALL_GEODATA" -eq '1' ]] && {
