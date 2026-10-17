@@ -336,6 +336,10 @@ create_xray_user() {
         else
             adduser -S -D -H -h /var/empty -s /bin/false -G xray xray
         fi
+    else
+        printf '%s\n' \
+            "WARNING: The 'xray' user already exists and will be reused to run Xray." \
+            'WARNING: Ensure this account is dedicated to Xray; it will own Xray logs and geodata.' >&2
     fi
 }
 

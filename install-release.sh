@@ -520,6 +520,11 @@ decompression() {
 }
 
 create_xray_user() {
+  if id -u xray >/dev/null 2>&1; then
+    printf '%s\n' \
+      "WARNING: The 'xray' user already exists and will be reused to run Xray." \
+      'WARNING: Ensure this account is dedicated to Xray; it will own Xray logs and geodata.' >&2
+  fi
   systemd-sysusers - <<'EOF'
 u xray - "Xray" /var/empty
 EOF
