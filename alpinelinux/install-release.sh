@@ -409,6 +409,8 @@ respawn_period=600
 pidfile="/run/${RC_SVCNAME}.pid"
 rc_ulimit="-n 1024000 -u 1024000"
 capabilities="^cap_net_bind_service,^cap_net_admin,^cap_net_raw"
+no_new_privs=yes
+umask=0077
 extra_commands="checkconfig"
 
 env=${env:-"XRAY_LOCATION_ASSET=/usr/local/share/xray/"} # See: https://xtls.github.io/en/config/env.html
