@@ -697,25 +697,27 @@ ExecStart=/usr/local/bin/xray run -config ${JSON_PATH}/%i.json" > \
 
 start_xray() {
   if [[ -f '/etc/systemd/system/xray.service' ]]; then
-    systemctl start "${XRAY_CUSTOMIZE:-xray}"
+    systemctl start "${XRAY_CUSTOMIZE[@]:-xray}"
     sleep 1s
-    if systemctl -q is-active "${XRAY_CUSTOMIZE:-xray}"; then
-      echo 'info: Start the Xray service.'
-    else
-      echo 'error: Failed to start Xray service.'
-      exit 1
-    fi
+    local xray_daemon
+    for xray_daemon in "${XRAY_CUSTOMIZE[@]:-xray}"; do
+      if ! systemctl -q is-active "$xray_daemon"; then
+        echo 'error: Failed to start Xray service.'
+        exit 1
+      fi
+    done
+    echo 'info: Start the Xray service.'
   fi
 }
 
 stop_xray() {
-  XRAY_CUSTOMIZE="$(systemctl list-units | awk '$1 ~ /^xray@.*\.service$/ {print $1}')"
-  if [[ -z "$XRAY_CUSTOMIZE" ]]; then
-    local xray_daemon_to_stop='xray.service'
-  else
-    local xray_daemon_to_stop="$XRAY_CUSTOMIZE"
+  local xray_units
+  xray_units="$(systemctl list-units | awk '$1 ~ /^xray@.*\.service$/ {print $1}')"
+  XRAY_CUSTOMIZE=()
+  if [[ -n "$xray_units" ]]; then
+    readarray -t XRAY_CUSTOMIZE <<<"$xray_units"
   fi
-  if ! systemctl stop "$xray_daemon_to_stop"; then
+  if ! systemctl stop "${XRAY_CUSTOMIZE[@]:-xray.service}"; then
     echo 'error: Stopping the Xray service failed.'
     exit 1
   fi
