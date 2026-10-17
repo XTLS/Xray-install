@@ -772,7 +772,7 @@ EOF
     compress
     delaycompress
     notifempty
-    create 0600 $INSTALL_USER_UID $INSTALL_USER_GID
+    copytruncate
 }
 EOF
   LOGROTATE_FIN='1'
