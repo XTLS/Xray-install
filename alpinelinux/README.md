@@ -38,6 +38,16 @@ Download the [installation script](install-release.sh) and the [Xray-core zip](h
 sh install-release.sh --local ./Xray-linux-64.zip
 ```
 
+## Log rotation
+
+Enable daily rotation with seven archives:
+
+```sh
+sh install-release.sh --logrotate
+```
+
+Alpine enables `crond`; on Gentoo, ensure a cron service is running.
+
 ## Management Commands
 
 #### Enable Xray Service (Auto-start on Boot)

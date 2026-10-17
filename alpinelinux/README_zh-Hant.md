@@ -38,6 +38,16 @@ sh install-release.sh
 sh install-release.sh --local ./Xray-linux-64.zip
 ```
 
+## 日誌輪替
+
+啟用每日輪替，保留 7 份日誌：
+
+```sh
+sh install-release.sh --logrotate
+```
+
+Alpine 會啟用 `crond`；Gentoo 需確保 cron 服務正在執行。
+
 ## 管理指令
 
 #### 啟用 Xray 服務 (開機自啟)

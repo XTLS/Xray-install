@@ -5,6 +5,7 @@ set -euo pipefail
 
 LOCAL_FILE=''
 HELP='0'
+LOGROTATE='0'
 
 judgment_parameters() {
     local action=''
@@ -27,6 +28,9 @@ judgment_parameters() {
             LOCAL_FILE="$2"
             shift
             ;;
+        --logrotate)
+            LOGROTATE='1'
+            ;;
         *)
             echo "error: Unknown option: $1"
             return 1
@@ -37,6 +41,10 @@ judgment_parameters() {
     if [ "$action" = help ]; then
         if [ -n "$LOCAL_FILE" ]; then
             echo 'error: --local can only be used with install.'
+            return 1
+        fi
+        if [ "$LOGROTATE" -eq '1' ]; then
+            echo 'error: --logrotate can only be used with install.'
             return 1
         fi
         HELP='1'
@@ -51,6 +59,7 @@ show_help() {
     echo '                     Verify <zip>.dgst if present; warn and continue if absent'
     echo '                     Missing tools may be installed from system package repositories'
     echo '                     The archive must contain xray, geoip.dat and geosite.dat'
+    echo '      --logrotate    Enable daily log rotation, keeping seven archives'
 }
 
 verify_local_archive() {
@@ -295,6 +304,26 @@ install_log() {
     fi
 }
 
+install_with_logrotate() {
+    install_dependencies logrotate
+    install -d -m 755 /etc/logrotate.d
+    cat >/etc/logrotate.d/xray <<'EOF'
+/var/log/xray/*.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+}
+EOF
+    if [ -f /etc/alpine-release ]; then
+        rc-update add crond default
+        rc-service crond status >/dev/null 2>&1 || rc-service crond start
+    fi
+}
+
 install_startup_service_file() {
     OPENRC='0'
     if [ ! -f '/etc/init.d/xray' ]; then
@@ -369,6 +398,9 @@ information() {
     if [ "$OPENRC" -eq '1' ]; then
         echo 'installed: /etc/init.d/xray'
     fi
+    if [ "$LOGROTATE" -eq '1' ]; then
+        echo 'installed: /etc/logrotate.d/xray'
+    fi
     rm -r "$TMP_DIRECTORY"
     echo "removed: $TMP_DIRECTORY"
     echo "You may need to execute a command to remove dependent software: $(pkg_manager del) curl unzip"
@@ -394,6 +426,9 @@ main() {
         install_dependencies unzip
     else
         install_dependencies curl unzip
+    fi
+    if [ "$LOGROTATE" -eq '1' ]; then
+        install_with_logrotate
     fi
 
     TMP_DIRECTORY="$(mktemp -d)"
