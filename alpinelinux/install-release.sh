@@ -144,7 +144,10 @@ verification_xray() {
 }
 
 decompression() {
-    unzip -q "$ZIP_FILE" -d "$TMP_DIRECTORY"
+    if ! unzip -q "$ZIP_FILE" -d "$TMP_DIRECTORY"; then
+        echo 'error: Xray decompression failed.'
+        exit 1
+    fi
 }
 
 is_it_running() {
