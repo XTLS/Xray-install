@@ -6,6 +6,7 @@ set -euo pipefail
 LOCAL_FILE=''
 HELP='0'
 LOGROTATE='0'
+BETA='0'
 
 judgment_parameters() {
     local action=''
@@ -31,6 +32,9 @@ judgment_parameters() {
         --logrotate)
             LOGROTATE='1'
             ;;
+        --beta)
+            BETA='1'
+            ;;
         *)
             echo "error: Unknown option: $1"
             return 1
@@ -47,7 +51,15 @@ judgment_parameters() {
             echo 'error: --logrotate can only be used with install.'
             return 1
         fi
+        if [ "$BETA" -eq '1' ]; then
+            echo 'error: --beta can only be used with install.'
+            return 1
+        fi
         HELP='1'
+    fi
+    if [ -n "$LOCAL_FILE" ] && [ "$BETA" -eq '1' ]; then
+        echo 'error: --beta and --local cannot be used together.'
+        return 1
     fi
 }
 
@@ -60,6 +72,7 @@ show_help() {
     echo '                     Missing tools may be installed from system package repositories'
     echo '                     The archive must contain xray, geoip.dat and geosite.dat'
     echo '      --logrotate    Enable daily log rotation, keeping seven archives'
+    echo '      --beta         Install the latest available release, including pre-releases'
 }
 
 verify_local_archive() {
@@ -228,6 +241,33 @@ install_dependencies() {
             exit 1
         fi
     done
+}
+
+get_prerelease() {
+    local releases_file="${TMP_DIRECTORY}releases.json"
+    if ! curl -f -sSL -H 'Accept: application/vnd.github+json' -o "$releases_file" \
+        'https://api.github.com/repos/XTLS/Xray-core/releases'; then
+        echo 'error: Failed to get release list, please check your network.'
+        return 1
+    fi
+    DOWNLOAD_LINK="$(awk -F '"' -v RS=',' -v archive="/Xray-linux-$MACHINE.zip" '
+        !found {
+            for (i = 1; i + 2 <= NF; i++) {
+                url = $(i + 2)
+                if ($i == "browser_download_url" &&
+                    index(url, "https://github.com/XTLS/Xray-core/releases/download/") == 1 &&
+                    substr(url, length(url) - length(archive) + 1) == archive) {
+                    print url
+                    found = 1
+                    break
+                }
+            }
+        }
+    ' "$releases_file")"
+    if [ -z "$DOWNLOAD_LINK" ]; then
+        echo "error: No release archive found for Xray-linux-$MACHINE.zip."
+        return 1
+    fi
 }
 
 download_xray() {
@@ -462,6 +502,9 @@ main() {
     if [ -n "$LOCAL_FILE" ]; then
         ZIP_FILE="$LOCAL_FILE"
     else
+        if [ "$BETA" -eq '1' ]; then
+            get_prerelease
+        fi
         download_xray
         verification_xray
     fi

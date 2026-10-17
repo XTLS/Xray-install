@@ -30,6 +30,14 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 sh install-release.sh
 ```
 
+## Pre-releases
+
+Install or upgrade to the latest available release, including pre-releases:
+
+```sh
+sh install-release.sh --beta
+```
+
 ## Install from a local archive (alternative)
 
 Download the [installation script](install-release.sh) and the [Xray-core zip](https://github.com/XTLS/Xray-core/releases) for your architecture, then run as root (x86_64 example):
