@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 # The files installed by the script conform to the Filesystem Hierarchy Standard:
 # https://wiki.linuxfoundation.org/lsb/fhs
 
@@ -22,9 +24,11 @@ JSON_PATH=${JSON_PATH:-/usr/local/etc/xray}
 
 # Set this variable only if you are starting xray with multiple configuration files:
 # export JSONS_PATH='/usr/local/etc/xray'
+JSONS_PATH=${JSONS_PATH:-}
 
 # Set this variable only if you want this script to check all the systemd unit file:
 # export check_all_service_files='yes'
+check_all_service_files=${check_all_service_files:-}
 
 # Gobal verbals
 
@@ -97,12 +101,22 @@ PROXY=''
 # --purge
 PURGE='0'
 
+# Installation status
+GEODATA='0'
+CONFIG_NEW='0'
+CONFDIR='0'
+LOG='0'
+LOGROTATE_FIN='0'
+LOGROTATE_DIR='0'
+SYSTEMD='0'
+XRAY_RUNNING='0'
+
 curl() {
   $(type -P curl) -L -q --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
 }
 
 systemd_cat_config() {
-  if systemd-analyze --help | grep -qw 'cat-config'; then
+  if systemd-analyze --help | grep -w 'cat-config' >/dev/null; then
     systemd-analyze --no-pager cat-config "$@"
     echo
   else
@@ -141,11 +155,11 @@ identify_the_operating_system_and_architecture() {
     ;;
   'armv6l')
     MACHINE='arm32-v6'
-    grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+    grep Features /proc/cpuinfo | grep -w 'vfp' >/dev/null || MACHINE='arm32-v5'
     ;;
   'armv7' | 'armv7l')
     MACHINE='arm32-v7a'
-    grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+    grep Features /proc/cpuinfo | grep -w 'vfp' >/dev/null || MACHINE='arm32-v5'
     ;;
   'armv8' | 'aarch64')
     MACHINE='arm64-v8a'
@@ -158,7 +172,7 @@ identify_the_operating_system_and_architecture() {
     ;;
   'mips64')
     MACHINE='mips64'
-    lscpu | grep -q "Little Endian" && MACHINE='mips64le'
+    lscpu | grep "Little Endian" >/dev/null && MACHINE='mips64le'
     ;;
   'mips64le')
     MACHINE='mips64le'
@@ -352,7 +366,7 @@ verify_local_archive() {
     sub(/^[[:space:]]*/, "", value)
     sub(/[[:space:]]*$/, "", value)
     print tolower(value)
-  }' "$digest_file")" || return 1
+  }' "$digest_file")"
   case "$checksum" in
     '' | *[!0-9a-f]*)
       echo "error: Missing or invalid SHA256 digest in $digest_file"
@@ -385,7 +399,7 @@ check_local_xray_version() {
 check_install_user() {
   if [[ -z "$INSTALL_USER" ]]; then
     if [[ -f '/usr/local/bin/xray' ]]; then
-      INSTALL_USER="$(grep '^[ '$'\t]*User[ '$'\t]*=' /etc/systemd/system/xray.service | tail -n 1 | awk -F = '{print $2}' | awk '{print $1}')"
+      INSTALL_USER="$(grep '^[ '$'\t]*User[ '$'\t]*=' /etc/systemd/system/xray.service | tail -n 1 | awk -F = '{print $2}' | awk '{print $1}')" || INSTALL_USER=''
       if [[ -z "$INSTALL_USER" ]]; then
         INSTALL_USER='root'
       fi
@@ -435,7 +449,7 @@ get_latest_version() {
     echo 'error: Failed to get release list, please check your network.'
     exit 1
   fi
-  RELEASE_LATEST="$(sed 'y/,/\n/' "$tmp_file" | grep 'tag_name' | awk -F '"' '{print $4}')"
+  RELEASE_LATEST="$(sed 'y/,/\n/' "$tmp_file" | grep 'tag_name' | awk -F '"' '{print $4}')" || RELEASE_LATEST=''
   if [[ -z "$RELEASE_LATEST" ]]; then
     if grep -q "API rate limit exceeded" "$tmp_file"; then
       echo "error: github API rate limit exceeded"
@@ -575,8 +589,12 @@ install_xray() {
     else
       chown 0:0 /var/log/xray/
       chmod 755 /var/log/xray/
-      chown "$INSTALL_USER_UID:$INSTALL_USER_GID" /var/log/xray/*.log
-      chmod 600 /var/log/xray/*.log
+      local logfile
+      for logfile in /var/log/xray/*.log; do
+        [[ -f "$logfile" ]] || continue
+        chown "$INSTALL_USER_UID:$INSTALL_USER_GID" "$logfile"
+        chmod 600 "$logfile"
+      done
     fi
   fi
 }
@@ -638,7 +656,7 @@ WantedBy=multi-user.target
 EOF
   chmod 644 /etc/systemd/system/xray.service /etc/systemd/system/xray@.service
   if [[ -n "$JSONS_PATH" ]]; then
-    "rm" '/etc/systemd/system/xray.service.d/10-donot_touch_single_conf.conf' \
+    "rm" -f '/etc/systemd/system/xray.service.d/10-donot_touch_single_conf.conf' \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_single_conf.conf'
     echo "# In case you have a good reason to do so, duplicate this file in the same directory and make your customizes there.
 # Or all changes you made will be lost!  # Refer: https://www.freedesktop.org/software/systemd/man/systemd.unit.html
@@ -648,7 +666,7 @@ ExecStart=/usr/local/bin/xray run -confdir $JSONS_PATH" |
       tee '/etc/systemd/system/xray.service.d/10-donot_touch_multi_conf.conf' > \
         '/etc/systemd/system/xray@.service.d/10-donot_touch_multi_conf.conf'
   else
-    "rm" '/etc/systemd/system/xray.service.d/10-donot_touch_multi_conf.conf' \
+    "rm" -f '/etc/systemd/system/xray.service.d/10-donot_touch_multi_conf.conf' \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_multi_conf.conf'
     echo "# In case you have a good reason to do so, duplicate this file in the same directory and make your customizes there.
 # Or all changes you made will be lost!  # Refer: https://www.freedesktop.org/software/systemd/man/systemd.unit.html
@@ -691,7 +709,7 @@ start_xray() {
 }
 
 stop_xray() {
-  XRAY_CUSTOMIZE="$(systemctl list-units | grep 'xray@' | awk -F ' ' '{print $1}')"
+  XRAY_CUSTOMIZE="$(systemctl list-units | awk '$1 ~ /^xray@.*\.service$/ {print $1}')"
   if [[ -z "$XRAY_CUSTOMIZE" ]]; then
     local xray_daemon_to_stop='xray.service'
   else
@@ -706,7 +724,7 @@ stop_xray() {
 
 install_with_logrotate() {
   install_software 'logrotate' 'logrotate'
-  if [[ -z "$LOGROTATE_TIME" ]]; then
+  if [[ -z "${LOGROTATE_TIME:-}" ]]; then
     LOGROTATE_TIME="00:00:00"
   fi
   cat <<EOF >/etc/systemd/system/logrotate@.service
@@ -797,7 +815,7 @@ check_update() {
 }
 
 remove_xray() {
-  if systemctl list-unit-files | grep -qw 'xray'; then
+  if systemctl list-unit-files | grep -w 'xray' >/dev/null; then
     if [[ -n "$(pidof xray)" ]]; then
       stop_xray
     fi
@@ -887,12 +905,12 @@ show_help() {
 }
 
 main() {
-  judgment_parameters "$@" || return 1
+  judgment_parameters "$@"
   [[ "$HELP" -eq '1' ]] && show_help
-  check_if_running_as_root || return 1
-  identify_the_operating_system_and_architecture || return 1
+  check_if_running_as_root
+  identify_the_operating_system_and_architecture
   if [[ -n "$LOCAL_FILE" ]]; then
-    verify_local_archive || return 1
+    verify_local_archive
   fi
 
   install_software "$package_provide_tput" 'tput'
@@ -916,14 +934,14 @@ main() {
   [[ "$LOGROTATE" -eq '1' ]] && install_with_logrotate
 
   # Two very important variables
-  TMP_DIRECTORY="$(mktemp -d)" || return 1
+  TMP_DIRECTORY="$(mktemp -d)"
   ZIP_FILE="${TMP_DIRECTORY}/Xray-linux-$MACHINE.zip"
 
   # Local archives never require GitHub; missing tools may use system repositories.
   if [[ -n "$LOCAL_FILE" ]]; then
     install_software 'unzip' 'unzip'
     decompression "$LOCAL_FILE"
-    check_local_xray_version || return 1
+    check_local_xray_version
   else
     get_current_version
     if [[ "$REINSTALL" -eq '1' ]]; then
@@ -966,7 +984,7 @@ main() {
   fi
 
   # Determine if Xray is running
-  if systemctl list-unit-files | grep -qw 'xray'; then
+  if systemctl list-unit-files | grep -w 'xray' >/dev/null; then
     if [[ -n "$(pidof xray)" ]]; then
       stop_xray
       XRAY_RUNNING='1'

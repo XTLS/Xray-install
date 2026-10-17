@@ -73,7 +73,7 @@ verify_local_archive() {
         sub(/^[[:space:]]*/, "", value)
         sub(/[[:space:]]*$/, "", value)
         print tolower(value)
-    }' "$digest_file")" || return 1
+    }' "$digest_file")"
     case "$checksum" in
     '' | *[!0-9a-f]*)
         echo "error: Missing or invalid SHA256 digest in $digest_file"
@@ -286,16 +286,20 @@ install_log() {
     else
         chown 0:0 /var/log/xray/
         chmod 755 /var/log/xray/
-        chown nobody:nobody /var/log/xray/*.log
-        chmod 600 /var/log/xray/*.log
+        local logfile
+        for logfile in /var/log/xray/*.log; do
+            [ -f "$logfile" ] || continue
+            chown nobody:nobody "$logfile"
+            chmod 600 "$logfile"
+        done
     fi
 }
 
 install_startup_service_file() {
     OPENRC='0'
     if [ ! -f '/etc/init.d/xray' ]; then
-        mkdir "${TMP_DIRECTORY}init.d/" || return 1
-        cat >"${TMP_DIRECTORY}init.d/xray" <<'EOF' || return 1
+        mkdir "${TMP_DIRECTORY}init.d/"
+        cat >"${TMP_DIRECTORY}init.d/xray" <<'EOF'
 #!/sbin/openrc-run
 
 name="Xray Daemon"
@@ -334,7 +338,7 @@ start_pre() {
 	checkconfig || return 1
 }
 EOF
-        install -m 755 "${TMP_DIRECTORY}init.d/xray" /etc/init.d/xray || return 1
+        install -m 755 "${TMP_DIRECTORY}init.d/xray" /etc/init.d/xray
         OPENRC='1'
     fi
 }
@@ -377,22 +381,22 @@ information() {
 }
 
 main() {
-    judgment_parameters "$@" || return 1
+    judgment_parameters "$@"
     if [ "$HELP" -eq 1 ]; then
         show_help
         return 0
     fi
-    check_distro || return 1
-    check_if_running_as_root || return 1
-    identify_architecture || return 1
+    check_distro
+    check_if_running_as_root
+    identify_architecture
     if [ -n "$LOCAL_FILE" ]; then
-        verify_local_archive || return 1
+        verify_local_archive
         install_dependencies unzip
     else
         install_dependencies curl unzip
     fi
 
-    TMP_DIRECTORY="$(mktemp -d)" || return 1
+    TMP_DIRECTORY="$(mktemp -d)"
     TMP_DIRECTORY="${TMP_DIRECTORY}/"
     ZIP_FILE="${TMP_DIRECTORY}Xray-linux-$MACHINE.zip"
     DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$MACHINE.zip"
@@ -405,13 +409,13 @@ main() {
     fi
     decompression
     if [ -n "$LOCAL_FILE" ]; then
-        check_local_xray_version || return 1
+        check_local_xray_version
     fi
     is_it_running
     install_xray
     install_confdir
     install_log
-    install_startup_service_file || return 1
+    install_startup_service_file
     information
 }
 
