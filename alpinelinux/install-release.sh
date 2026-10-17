@@ -194,12 +194,47 @@ install_log() {
 install_startup_service_file() {
     OPENRC='0'
     if [ ! -f '/etc/init.d/xray' ]; then
-        mkdir "${TMP_DIRECTORY}init.d/"
-        if ! curl -f -L -o "${TMP_DIRECTORY}init.d/xray" https://github.com/XTLS/Xray-install/raw/main/alpinelinux/init.d/xray -sS; then
-            echo 'error: Failed to start service file download! Please check your network or try again.'
-            exit 1
-        fi
-        install -m 755 "${TMP_DIRECTORY}init.d/xray" /etc/init.d/xray
+        mkdir "${TMP_DIRECTORY}init.d/" || return 1
+        cat >"${TMP_DIRECTORY}init.d/xray" <<'EOF' || return 1
+#!/sbin/openrc-run
+
+name="Xray Daemon"
+description="A unified platform for anti-censorship"
+
+supervisor=supervise-daemon
+respawn_delay=5
+respawn_max=2
+respawn_period=600
+
+pidfile="/run/${RC_SVCNAME}.pid"
+rc_ulimit="-n 1024000 -u 1024000"
+capabilities="^cap_net_bind_service,^cap_net_admin,^cap_net_raw"
+extra_commands="checkconfig"
+
+env=${env:-"XRAY_LOCATION_ASSET=/usr/local/share/xray/"} # See: https://xtls.github.io/en/config/env.html
+confdir=${confdir:-"/usr/local/etc/xray/"}
+command="/usr/local/bin/xray"
+command_user="nobody:nobody"
+command_args="run -confdir $confdir"
+required_files="$confdir"
+
+depend() {
+	need net
+	want dns ntp-client
+	after firewall
+}
+
+checkconfig() {
+	export $env
+	$command $command_args -test
+	eend $?
+}
+
+start_pre() {
+	checkconfig || return 1
+}
+EOF
+        install -m 755 "${TMP_DIRECTORY}init.d/xray" /etc/init.d/xray || return 1
         OPENRC='1'
     fi
 }
