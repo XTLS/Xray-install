@@ -111,6 +111,16 @@ LOGROTATE_DIR='0'
 SYSTEMD='0'
 XRAY_RUNNING='0'
 
+TMP_PATHS=()
+
+cleanup() {
+  if [[ "${#TMP_PATHS[@]}" -gt '0' ]]; then
+    "rm" -rf -- "${TMP_PATHS[@]}" || :
+  fi
+}
+
+trap cleanup EXIT
+
 curl() {
   $(type -P curl) -L -q --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
 }
@@ -441,6 +451,7 @@ get_latest_version() {
   # Get Xray latest release version number
   local tmp_file
   tmp_file="$(mktemp)"
+  TMP_PATHS+=("$tmp_file")
   local url='https://api.github.com/repos/XTLS/Xray-core/releases/latest'
   if curl -x "${PROXY}" -sSfLo "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
     echo "get release list success"
@@ -785,6 +796,7 @@ install_geodata() {
   local file_site='geosite.dat'
   local dir_tmp
   dir_tmp="$(mktemp -d)"
+  TMP_PATHS+=("$dir_tmp")
   [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '0' ]] && echo "warning: Xray was not installed"
   download_geodata $download_link_geoip $file_ip
   download_geodata $download_link_geosite $file_dlc
@@ -937,6 +949,7 @@ main() {
 
   # Two very important variables
   TMP_DIRECTORY="$(mktemp -d)"
+  TMP_PATHS+=("$TMP_DIRECTORY")
   ZIP_FILE="${TMP_DIRECTORY}/Xray-linux-$MACHINE.zip"
 
   # Local archives never require GitHub; missing tools may use system repositories.

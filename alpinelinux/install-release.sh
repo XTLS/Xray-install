@@ -397,6 +397,7 @@ main() {
     fi
 
     TMP_DIRECTORY="$(mktemp -d)"
+    trap '"rm" -rf -- "$TMP_DIRECTORY" || :' EXIT
     TMP_DIRECTORY="${TMP_DIRECTORY}/"
     ZIP_FILE="${TMP_DIRECTORY}Xray-linux-$MACHINE.zip"
     DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$MACHINE.zip"
