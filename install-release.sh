@@ -269,7 +269,7 @@ judgment_parameters() {
       PURGE='1'
       ;;
     '--version')
-      if [[ -z "$2" ]]; then
+      if [[ -z "${2:-}" || "$2" == -* ]]; then
         echo "error: Please specify the correct version."
         return 1
       fi
@@ -293,7 +293,7 @@ judgment_parameters() {
       shift
       ;;
     '-p' | '--proxy')
-      if [[ -z "$2" ]]; then
+      if [[ -z "${2:-}" || "$2" == -* ]]; then
         echo "error: Please specify the proxy server address."
         return 1
       fi
@@ -301,8 +301,8 @@ judgment_parameters() {
       shift
       ;;
     '-u' | '--install-user')
-      if [[ -z "$2" ]]; then
-        echo "error: Please specify the install user.}"
+      if [[ -z "${2:-}" || "$2" == -* ]]; then
+        echo "error: Please specify the install user."
         return 1
       fi
       INSTALL_USER="$2"
@@ -315,9 +315,9 @@ judgment_parameters() {
       N_UP_SERVICE='1'
       ;;
     '--logrotate')
-      if ! grep -qE '\b([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\b' <<<"$2"; then
+      if [[ ! "${2:-}" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$ ]]; then
         echo "error: Wrong format of time, it should be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
-        exit 1
+        return 1
       fi
       LOGROTATE='1'
       LOGROTATE_TIME="$2"
