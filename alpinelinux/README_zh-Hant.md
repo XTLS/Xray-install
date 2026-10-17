@@ -66,7 +66,7 @@ rc-update add xray.a
 rc-service xray.a start
 ```
 
-各實例可以使用不同的 `confdir`。升級僅停止並恢復原先執行中的實例，保留既有服務檔案。
+各實例可以使用不同的 `confdir`。升級僅停止並恢復原先執行中的實例。
 
 #### 啟用 Xray 服務 (開機自啟)
 

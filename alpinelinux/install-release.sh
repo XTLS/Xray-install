@@ -322,11 +322,28 @@ manage_xray_services() {
     done
 }
 
+create_xray_user() {
+    if ! grep -q '^xray:' /etc/group; then
+        if [ -f /etc/gentoo-release ]; then
+            groupadd -r xray
+        else
+            addgroup -S xray
+        fi
+    fi
+    if ! id -u xray >/dev/null 2>&1; then
+        if [ -f /etc/gentoo-release ]; then
+            useradd -r -M -d /var/empty -s /bin/false -g xray xray
+        else
+            adduser -S -D -H -h /var/empty -s /bin/false -G xray xray
+        fi
+    fi
+}
+
 install_xray() {
-    install -m 755 "${TMP_DIRECTORY}xray" "/usr/local/bin/xray"
-    install -d -m 755 -o nobody -g nobody /usr/local/share/xray/
-    install -m 644 -o nobody -g nobody "${TMP_DIRECTORY}geoip.dat" "/usr/local/share/xray/geoip.dat"
-    install -m 644 -o nobody -g nobody "${TMP_DIRECTORY}geosite.dat" "/usr/local/share/xray/geosite.dat"
+    install -m 755 -o 0 -g 0 "${TMP_DIRECTORY}xray" "/usr/local/bin/xray"
+    install -d -m 755 -o xray -g xray /usr/local/share/xray/
+    install -m 644 -o xray -g xray "${TMP_DIRECTORY}geoip.dat" "/usr/local/share/xray/geoip.dat"
+    install -m 644 -o xray -g xray "${TMP_DIRECTORY}geosite.dat" "/usr/local/share/xray/geosite.dat"
 }
 
 install_confdir() {
@@ -343,19 +360,13 @@ install_confdir() {
 install_log() {
     LOG='0'
     if [ ! -d '/var/log/xray/' ]; then
-        install -d -m 755 -o 0 -g 0 /var/log/xray/
-        install -m 600 -o nobody -g nobody /dev/null /var/log/xray/access.log
-        install -m 600 -o nobody -g nobody /dev/null /var/log/xray/error.log
+        install -d -m 700 -o xray -g xray /var/log/xray/
+        install -m 600 -o xray -g xray /dev/null /var/log/xray/access.log
+        install -m 600 -o xray -g xray /dev/null /var/log/xray/error.log
         LOG='1'
     else
-        chown 0:0 /var/log/xray/
-        chmod 755 /var/log/xray/
-        local logfile
-        for logfile in /var/log/xray/*.log; do
-            [ -f "$logfile" ] || continue
-            chown nobody:nobody "$logfile"
-            chmod 600 "$logfile"
-        done
+        chown -hR xray:xray /var/log/xray/
+        chmod 700 /var/log/xray/
     fi
 }
 
@@ -409,7 +420,7 @@ xray.*)
 	;;
 esac
 command="/usr/local/bin/xray"
-command_user="nobody:nobody"
+command_user="xray:xray"
 command_args="run -confdir $confdir"
 required_files="$confdir"
 
@@ -512,6 +523,7 @@ main() {
     if [ -n "$LOCAL_FILE" ]; then
         check_local_xray_version
     fi
+    create_xray_user
     is_it_running
     install_xray
     install_confdir

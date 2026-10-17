@@ -66,7 +66,7 @@ rc-update add xray.a
 rc-service xray.a start
 ```
 
-Each instance can use a different `confdir`. Updates stop and restore only the instances that were running; existing service files are preserved.
+Each instance can use a different `confdir`. Updates stop and restore only the instances that were running.
 
 #### Enable Xray Service (Auto-start on Boot)
 
