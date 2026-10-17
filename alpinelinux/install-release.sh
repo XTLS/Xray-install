@@ -3,6 +3,36 @@
 
 set -euo pipefail
 
+HELP='0'
+
+judgment_parameters() {
+    local action=''
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+        install | help)
+            if [ -n "$action" ] && [ "$action" != "$1" ]; then
+                echo 'error: You can only choose one action.'
+                return 1
+            fi
+            action="$1"
+            ;;
+        *)
+            echo "error: Unknown option: $1"
+            return 1
+            ;;
+        esac
+        shift
+    done
+    if [ "$action" = help ]; then
+        HELP='1'
+    fi
+}
+
+show_help() {
+    echo "usage: $0 [install | help]"
+    echo 'With no action, install/update Xray from GitHub.'
+}
+
 pkg_manager() {
     local OP="$1" PM=apk
     shift
@@ -277,6 +307,11 @@ information() {
 }
 
 main() {
+    judgment_parameters "$@" || return 1
+    if [ "$HELP" -eq 1 ]; then
+        show_help
+        return 0
+    fi
     check_distro || return 1
     check_if_running_as_root || return 1
     identify_architecture || return 1
@@ -298,4 +333,4 @@ main() {
     information
 }
 
-main
+main "$@"
