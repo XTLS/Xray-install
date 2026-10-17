@@ -435,7 +435,7 @@ depend() {
 
 checkconfig() {
 	export $env
-	$command $command_args -test
+	su -s /bin/sh -c "$command $command_args -test" "${command_user%:*}"
 	eend $?
 }
 
