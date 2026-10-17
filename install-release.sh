@@ -71,9 +71,6 @@ FORCE='0'
 # --beta
 BETA='0'
 
-# --install-user ?
-INSTALL_USER=''
-
 # --without-geodata
 NO_GEODATA='0'
 
@@ -310,14 +307,6 @@ judgment_parameters() {
       PROXY="$2"
       shift
       ;;
-    '-u' | '--install-user')
-      if [[ -z "${2:-}" || "$2" == -* ]]; then
-        echo "error: Please specify the install user."
-        return 1
-      fi
-      INSTALL_USER="$2"
-      shift
-      ;;
     '--reinstall')
       REINSTALL='1'
       ;;
@@ -404,25 +393,6 @@ check_local_xray_version() {
     echo 'error: Local xray binary cannot run. Please check its architecture and format.'
     return 1
   fi
-}
-
-check_install_user() {
-  if [[ -z "$INSTALL_USER" ]]; then
-    if [[ -f '/usr/local/bin/xray' ]]; then
-      INSTALL_USER="$(grep '^[ '$'\t]*User[ '$'\t]*=' /etc/systemd/system/xray.service | tail -n 1 | awk -F = '{print $2}' | awk '{print $1}')" || INSTALL_USER=''
-      if [[ -z "$INSTALL_USER" ]]; then
-        INSTALL_USER='root'
-      fi
-    else
-      INSTALL_USER='nobody'
-    fi
-  fi
-  if ! id "$INSTALL_USER" >/dev/null 2>&1; then
-    echo "the user '$INSTALL_USER' is not effective"
-    exit 1
-  fi
-  INSTALL_USER_UID="$(id -u "$INSTALL_USER")"
-  INSTALL_USER_GID="$(id -g "$INSTALL_USER")"
 }
 
 install_software() {
@@ -549,22 +519,35 @@ decompression() {
   echo "info: Extract the Xray package to $TMP_DIRECTORY and prepare it for installation."
 }
 
+create_xray_user() {
+  systemd-sysusers - <<'EOF'
+u xray - "Xray" /var/empty
+EOF
+  if [[ "$(id -u xray)" -eq '0' || "$(id -g xray)" -eq '0' ]]; then
+    echo 'error: The xray account must have a non-root user and group.'
+    exit 1
+  fi
+}
+
 install_file() {
   NAME="$1"
   if [[ "$NAME" == 'xray' ]]; then
-    install -m 755 "${TMP_DIRECTORY}/$NAME" "/usr/local/bin/$NAME"
+    install -m 755 -o 0 -g 0 "${TMP_DIRECTORY}/$NAME" "/usr/local/bin/$NAME"
   elif [[ "$NAME" == 'geoip.dat' ]] || [[ "$NAME" == 'geosite.dat' ]]; then
-    install -m 644 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "${TMP_DIRECTORY}/$NAME" "${DAT_PATH}/$NAME"
+    install -m 644 -o xray -g xray "${TMP_DIRECTORY}/$NAME" "${DAT_PATH}/$NAME"
   fi
 }
 
 install_geodata_dir() {
-  install -d -m 755 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "$DAT_PATH"
+  install -d -m 755 -o xray -g xray "$DAT_PATH"
 }
 
 install_xray() {
   # Install Xray binary to /usr/local/bin/ and $DAT_PATH
   install_file xray
+  if [[ -d "$DAT_PATH" ]]; then
+    chown -hR xray:xray "$DAT_PATH"
+  fi
   # If the file exists, geoip.dat and geosite.dat will not be installed or updated
   if [[ "$NO_GEODATA" -eq '0' ]] && [[ ! -f "${DAT_PATH}/.undat" ]]; then
     install_geodata_dir
@@ -593,19 +576,13 @@ install_xray() {
   # Used to store Xray log files
   if [[ "$NO_LOGFILES" -eq '0' ]]; then
     if [[ ! -d '/var/log/xray/' ]]; then
-      install -d -m 755 -o 0 -g 0 /var/log/xray/
-      install -m 600 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" /dev/null /var/log/xray/access.log
-      install -m 600 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" /dev/null /var/log/xray/error.log
+      install -d -m 700 -o xray -g xray /var/log/xray/
+      install -m 600 -o xray -g xray /dev/null /var/log/xray/access.log
+      install -m 600 -o xray -g xray /dev/null /var/log/xray/error.log
       LOG='1'
     else
-      chown 0:0 /var/log/xray/
-      chmod 755 /var/log/xray/
-      local logfile
-      for logfile in /var/log/xray/*.log; do
-        [[ -f "$logfile" ]] || continue
-        chown "$INSTALL_USER_UID:$INSTALL_USER_GID" "$logfile"
-        chmod 600 "$logfile"
-      done
+      chown -hR xray:xray /var/log/xray/
+      chmod 700 /var/log/xray/
     fi
   fi
 }
@@ -613,14 +590,6 @@ install_xray() {
 install_startup_service_file() {
   mkdir -p '/etc/systemd/system/xray.service.d'
   mkdir -p '/etc/systemd/system/xray@.service.d/'
-  local temp_CapabilityBoundingSet="CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
-  local temp_AmbientCapabilities="AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
-  local temp_NoNewPrivileges="NoNewPrivileges=true"
-  if [[ "$INSTALL_USER_UID" -eq '0' ]]; then
-    temp_CapabilityBoundingSet="#${temp_CapabilityBoundingSet}"
-    temp_AmbientCapabilities="#${temp_AmbientCapabilities}"
-    temp_NoNewPrivileges="#${temp_NoNewPrivileges}"
-  fi
   cat >/etc/systemd/system/xray.service <<EOF
 [Unit]
 Description=Xray Service
@@ -628,10 +597,12 @@ Documentation=https://github.com/xtls
 After=network.target nss-lookup.target
 
 [Service]
-User=$INSTALL_USER
-${temp_CapabilityBoundingSet}
-${temp_AmbientCapabilities}
-${temp_NoNewPrivileges}
+User=xray
+Group=xray
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+UMask=0077
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
 Restart=on-failure
 RestartPreventExitStatus=23
@@ -650,10 +621,12 @@ Documentation=https://github.com/xtls
 After=network.target nss-lookup.target
 
 [Service]
-User=$INSTALL_USER
-${temp_CapabilityBoundingSet}
-${temp_AmbientCapabilities}
-${temp_NoNewPrivileges}
+User=xray
+Group=xray
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+UMask=0077
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/%i.json
 Restart=on-failure
 RestartPreventExitStatus=23
@@ -766,9 +739,9 @@ Persistent=true
 WantedBy=timers.target
 EOF
   if [[ ! -d '/etc/logrotate.d/' ]]; then
-    install -d -m 700 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" /etc/logrotate.d/
     LOGROTATE_DIR='1'
   fi
+  install -d -m 755 -o 0 -g 0 /etc/logrotate.d/
   cat <<EOF >/etc/logrotate.d/xray
 /var/log/xray/*.log {
     daily
@@ -784,6 +757,7 @@ EOF
 }
 
 install_geodata() {
+  create_xray_user
   download_geodata() {
     if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}" "${1}"; then
       echo 'error: Download failed! Please check your network or try again.'
@@ -814,8 +788,8 @@ install_geodata() {
   done
   cd - >/dev/null || exit 1
   install_geodata_dir
-  install -m 644 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "${dir_tmp}"/${file_dlc} "${DAT_PATH}"/${file_site}
-  install -m 644 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "${dir_tmp}"/${file_ip} "${DAT_PATH}"/${file_ip}
+  install -m 644 -o xray -g xray "${dir_tmp}"/${file_dlc} "${DAT_PATH}"/${file_site}
+  install -m 644 -o xray -g xray "${dir_tmp}"/${file_ip} "${DAT_PATH}"/${file_ip}
   rm -r "${dir_tmp}"
   exit 0
 }
@@ -907,7 +881,6 @@ show_help() {
   echo '                              Verify <zip>.dgst if present; warn and continue if absent'
   echo '                              Missing tools may be installed from system package repositories'
   echo '    -p, --proxy               Download through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
-  echo '    -u, --install-user        Install Xray in specified user, e.g, -u root'
   echo '    --reinstall               Reinstall current Xray version'
   echo "    --no-update-service       Don't change service files if they are exist"
   echo "    --without-geodata         Don't install/update geoip.dat and geosite.dat"
@@ -941,15 +914,8 @@ main() {
   # Parameter information
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_xray
-  [[ "$INSTALL_GEODATA" -eq '1' ]] && {
-    check_install_user
-    install_geodata
-  }
+  [[ "$INSTALL_GEODATA" -eq '1' ]] && install_geodata
 
-  # Check if the user is effective
-  check_install_user
-
-  # Check Logrotate after Check User
   [[ "$LOGROTATE" -eq '1' ]] && install_with_logrotate
 
   # Two very important variables
@@ -1010,6 +976,7 @@ main() {
       XRAY_RUNNING='1'
     fi
   fi
+  create_xray_user
   install_xray
   [[ "$N_UP_SERVICE" -eq '1' && -f '/etc/systemd/system/xray.service' ]] || install_startup_service_file
   echo 'installed: /usr/local/bin/xray'

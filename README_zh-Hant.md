@@ -29,7 +29,7 @@
 
 ## 基本用法
 
-**安裝並升級 Xray-core 和地理數據，預設使用 `User=nobody`，但不會覆蓋已有服務檔案中的 `User` 設定**
+**安裝並升級 Xray-core 和地理數據**
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -74,12 +74,6 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 - /etc/systemd/system/logrotate@.service
 - /etc/systemd/system/logrotate@.timer
 - /etc/logrotate.d/xray
-```
-
-**安裝並升級 Xray-core 和地理數據，使用 `User=root`，會覆蓋已有服務檔案中的 `User` 設定**
-
-```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u root
 ```
 
 **安裝並升級 Xray-core，但不包含地理數據**
