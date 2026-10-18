@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 # The files installed by the script conform to the Filesystem Hierarchy Standard:
 # https://wiki.linuxfoundation.org/lsb/fhs
 
@@ -22,9 +24,11 @@ JSON_PATH=${JSON_PATH:-/usr/local/etc/xray}
 
 # Set this variable only if you are starting xray with multiple configuration files:
 # export JSONS_PATH='/usr/local/etc/xray'
+JSONS_PATH=${JSONS_PATH:-}
 
 # Set this variable only if you want this script to check all the systemd unit file:
 # export check_all_service_files='yes'
+check_all_service_files=${check_all_service_files:-}
 
 # Gobal verbals
 
@@ -67,9 +71,6 @@ FORCE='0'
 # --beta
 BETA='0'
 
-# --install-user ?
-INSTALL_USER=''
-
 # --without-geodata
 NO_GEODATA='0'
 
@@ -97,12 +98,32 @@ PROXY=''
 # --purge
 PURGE='0'
 
+# Installation status
+GEODATA='0'
+CONFIG_NEW='0'
+CONFDIR='0'
+LOG='0'
+LOGROTATE_FIN='0'
+LOGROTATE_DIR='0'
+SYSTEMD='0'
+XRAY_RUNNING='0'
+
+TMP_PATHS=()
+
+cleanup() {
+  if [[ "${#TMP_PATHS[@]}" -gt '0' ]]; then
+    "rm" -rf -- "${TMP_PATHS[@]}" || :
+  fi
+}
+
+trap cleanup EXIT
+
 curl() {
   $(type -P curl) -L -q --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
 }
 
 systemd_cat_config() {
-  if systemd-analyze --help | grep -qw 'cat-config'; then
+  if systemd-analyze --help | grep -w 'cat-config' >/dev/null; then
     systemd-analyze --no-pager cat-config "$@"
     echo
   else
@@ -141,11 +162,11 @@ identify_the_operating_system_and_architecture() {
     ;;
   'armv6l')
     MACHINE='arm32-v6'
-    grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+    grep Features /proc/cpuinfo | grep -w 'vfp' >/dev/null || MACHINE='arm32-v5'
     ;;
   'armv7' | 'armv7l')
     MACHINE='arm32-v7a'
-    grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
+    grep Features /proc/cpuinfo | grep -w 'vfp' >/dev/null || MACHINE='arm32-v5'
     ;;
   'armv8' | 'aarch64')
     MACHINE='arm64-v8a'
@@ -158,7 +179,7 @@ identify_the_operating_system_and_architecture() {
     ;;
   'mips64')
     MACHINE='mips64'
-    lscpu | grep -q "Little Endian" && MACHINE='mips64le'
+    lscpu | grep "Little Endian" >/dev/null && MACHINE='mips64le'
     ;;
   'mips64le')
     MACHINE='mips64le'
@@ -255,7 +276,7 @@ judgment_parameters() {
       PURGE='1'
       ;;
     '--version')
-      if [[ -z "$2" ]]; then
+      if [[ -z "${2:-}" || "$2" == -* ]]; then
         echo "error: Please specify the correct version."
         return 1
       fi
@@ -271,27 +292,19 @@ judgment_parameters() {
       ;;
     '-l' | '--local')
       local_install='1'
-      if [[ -z "$2" ]]; then
-        echo "error: Please specify the correct local file."
+      if [[ -z "${2:-}" || "$2" == -* ]]; then
+        echo "error: Please specify a local Xray zip file after --local."
         return 1
       fi
       LOCAL_FILE="$2"
       shift
       ;;
     '-p' | '--proxy')
-      if [[ -z "$2" ]]; then
+      if [[ -z "${2:-}" || "$2" == -* ]]; then
         echo "error: Please specify the proxy server address."
         return 1
       fi
       PROXY="$2"
-      shift
-      ;;
-    '-u' | '--install-user')
-      if [[ -z "$2" ]]; then
-        echo "error: Please specify the install user.}"
-        return 1
-      fi
-      INSTALL_USER="$2"
       shift
       ;;
     '--reinstall')
@@ -301,9 +314,9 @@ judgment_parameters() {
       N_UP_SERVICE='1'
       ;;
     '--logrotate')
-      if ! grep -qE '\b([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\b' <<<"$2"; then
+      if [[ ! "${2:-}" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$ ]]; then
         echo "error: Wrong format of time, it should be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
-        exit 1
+        return 1
       fi
       LOGROTATE='1'
       LOGROTATE_TIME="$2"
@@ -322,29 +335,64 @@ judgment_parameters() {
     echo 'You can only choose one action.'
     return 1
   fi
+  if [[ "$local_install" -eq '1' && "$INSTALL" -ne '1' ]]; then
+    echo 'error: --local can only be used with install.'
+    return 1
+  fi
   if [[ "$INSTALL" -eq '1' ]] && ((temp_version + local_install + REINSTALL + BETA > 1)); then
     echo "--version,--reinstall,--beta and --local can't be used together."
     return 1
   fi
 }
 
-check_install_user() {
-  if [[ -z "$INSTALL_USER" ]]; then
-    if [[ -f '/usr/local/bin/xray' ]]; then
-      INSTALL_USER="$(grep '^[ '$'\t]*User[ '$'\t]*=' /etc/systemd/system/xray.service | tail -n 1 | awk -F = '{print $2}' | awk '{print $1}')"
-      if [[ -z "$INSTALL_USER" ]]; then
-        INSTALL_USER='root'
-      fi
-    else
-      INSTALL_USER='nobody'
-    fi
+verify_local_archive() {
+  local digest_file="${LOCAL_FILE}.dgst" checksum local_sum
+  if [ ! -f "$LOCAL_FILE" ] || [ ! -r "$LOCAL_FILE" ]; then
+    echo "error: Local Xray archive is not a readable file: $LOCAL_FILE"
+    return 1
   fi
-  if ! id "$INSTALL_USER" >/dev/null 2>&1; then
-    echo "the user '$INSTALL_USER' is not effective"
-    exit 1
+  if [ ! -e "$digest_file" ] && [ ! -L "$digest_file" ]; then
+    echo "warning: No local verification file found: $digest_file; continuing without SHA256 verification."
+    return 0
   fi
-  INSTALL_USER_UID="$(id -u "$INSTALL_USER")"
-  INSTALL_USER_GID="$(id -g "$INSTALL_USER")"
+  if [ ! -f "$digest_file" ] || [ ! -r "$digest_file" ]; then
+    echo "error: Local verification file is not readable: $digest_file"
+    return 1
+  fi
+  checksum="$(awk -F '=' '/^[[:space:]]*SHA(2-)?256[[:space:]]*=/ {
+    if (NF != 2) { print "invalid"; next }
+    value = $2
+    sub(/^[[:space:]]*/, "", value)
+    sub(/[[:space:]]*$/, "", value)
+    print tolower(value)
+  }' "$digest_file")"
+  case "$checksum" in
+    '' | *[!0-9a-f]*)
+      echo "error: Missing or invalid SHA256 digest in $digest_file"
+      return 1
+      ;;
+  esac
+  if [ "${#checksum}" -ne 64 ]; then
+    echo "error: Missing or invalid SHA256 digest in $digest_file"
+    return 1
+  fi
+  if ! local_sum="$(sha256sum "$LOCAL_FILE")"; then
+    echo "error: Could not calculate SHA256 for $LOCAL_FILE"
+    return 1
+  fi
+  local_sum="${local_sum%% *}"
+  if [ "$checksum" != "$local_sum" ]; then
+    echo "error: SHA256 check failed for $LOCAL_FILE"
+    return 1
+  fi
+  echo 'info: Local Xray archive passed SHA256 verification.'
+}
+
+check_local_xray_version() {
+  if ! chmod u+x "$TMP_DIRECTORY/xray" || ! "$TMP_DIRECTORY/xray" -version >/dev/null 2>&1; then
+    echo 'error: Local xray binary cannot run. Please check its architecture and format.'
+    return 1
+  fi
 }
 
 install_software() {
@@ -373,6 +421,7 @@ get_latest_version() {
   # Get Xray latest release version number
   local tmp_file
   tmp_file="$(mktemp)"
+  TMP_PATHS+=("$tmp_file")
   local url='https://api.github.com/repos/XTLS/Xray-core/releases/latest'
   if curl -x "${PROXY}" -sSfLo "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
     echo "get release list success"
@@ -381,7 +430,7 @@ get_latest_version() {
     echo 'error: Failed to get release list, please check your network.'
     exit 1
   fi
-  RELEASE_LATEST="$(sed 'y/,/\n/' "$tmp_file" | grep 'tag_name' | awk -F '"' '{print $4}')"
+  RELEASE_LATEST="$(sed 'y/,/\n/' "$tmp_file" | grep 'tag_name' | awk -F '"' '{print $4}')" || RELEASE_LATEST=''
   if [[ -z "$RELEASE_LATEST" ]]; then
     if grep -q "API rate limit exceeded" "$tmp_file"; then
       echo "error: github API rate limit exceeded"
@@ -470,22 +519,40 @@ decompression() {
   echo "info: Extract the Xray package to $TMP_DIRECTORY and prepare it for installation."
 }
 
+create_xray_user() {
+  if id -u xray >/dev/null 2>&1; then
+    printf '%s\n' \
+      "WARNING: The 'xray' user already exists and will be reused to run Xray." \
+      'WARNING: Ensure this account is dedicated to Xray; it will own Xray logs and geodata.' >&2
+  fi
+  systemd-sysusers - <<'EOF'
+u xray - "Xray" /var/empty
+EOF
+  if [[ "$(id -u xray)" -eq '0' || "$(id -g xray)" -eq '0' ]]; then
+    echo 'error: The xray account must have a non-root user and group.'
+    exit 1
+  fi
+}
+
 install_file() {
   NAME="$1"
   if [[ "$NAME" == 'xray' ]]; then
-    install -m 755 "${TMP_DIRECTORY}/$NAME" "/usr/local/bin/$NAME"
+    install -m 755 -o 0 -g 0 "${TMP_DIRECTORY}/$NAME" "/usr/local/bin/$NAME"
   elif [[ "$NAME" == 'geoip.dat' ]] || [[ "$NAME" == 'geosite.dat' ]]; then
-    install -m 644 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "${TMP_DIRECTORY}/$NAME" "${DAT_PATH}/$NAME"
+    install -m 644 -o xray -g xray "${TMP_DIRECTORY}/$NAME" "${DAT_PATH}/$NAME"
   fi
 }
 
 install_geodata_dir() {
-  install -d -m 755 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "$DAT_PATH"
+  install -d -m 755 -o xray -g xray "$DAT_PATH"
 }
 
 install_xray() {
   # Install Xray binary to /usr/local/bin/ and $DAT_PATH
   install_file xray
+  if [[ -d "$DAT_PATH" ]]; then
+    chown -hR xray:xray "$DAT_PATH"
+  fi
   # If the file exists, geoip.dat and geosite.dat will not be installed or updated
   if [[ "$NO_GEODATA" -eq '0' ]] && [[ ! -f "${DAT_PATH}/.undat" ]]; then
     install_geodata_dir
@@ -498,6 +565,7 @@ install_xray() {
   # shellcheck disable=SC2153
   if [[ -z "$JSONS_PATH" ]] && [[ ! -d "$JSON_PATH" ]]; then
     install -d "$JSON_PATH"
+    install -m 644 -o 0 -g 0 /dev/null "${JSON_PATH}/config.json"
     echo "{}" >"${JSON_PATH}/config.json"
     CONFIG_NEW='1'
   fi
@@ -506,6 +574,7 @@ install_xray() {
   if [[ -n "$JSONS_PATH" ]] && [[ ! -d "$JSONS_PATH" ]]; then
     install -d "$JSONS_PATH"
     for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_stats 08_fakedns 09_metrics 10_observatory 11_geodata 12_env 99_version; do
+      install -m 644 -o 0 -g 0 /dev/null "${JSONS_PATH}/${BASE}.json"
       echo '{}' >"${JSONS_PATH}/${BASE}.json"
     done
     CONFDIR='1'
@@ -514,15 +583,11 @@ install_xray() {
   # Used to store Xray log files
   if [[ "$NO_LOGFILES" -eq '0' ]]; then
     if [[ ! -d '/var/log/xray/' ]]; then
-      install -d -m 755 -o 0 -g 0 /var/log/xray/
-      install -m 600 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" /dev/null /var/log/xray/access.log
-      install -m 600 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" /dev/null /var/log/xray/error.log
+      install -d -m 700 -o xray -g xray /var/log/xray/
       LOG='1'
     else
-      chown 0:0 /var/log/xray/
-      chmod 755 /var/log/xray/
-      chown "$INSTALL_USER_UID:$INSTALL_USER_GID" /var/log/xray/*.log
-      chmod 600 /var/log/xray/*.log
+      chown -hR xray:xray /var/log/xray/
+      chmod 700 /var/log/xray/
     fi
   fi
 }
@@ -530,14 +595,6 @@ install_xray() {
 install_startup_service_file() {
   mkdir -p '/etc/systemd/system/xray.service.d'
   mkdir -p '/etc/systemd/system/xray@.service.d/'
-  local temp_CapabilityBoundingSet="CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
-  local temp_AmbientCapabilities="AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
-  local temp_NoNewPrivileges="NoNewPrivileges=true"
-  if [[ "$INSTALL_USER_UID" -eq '0' ]]; then
-    temp_CapabilityBoundingSet="#${temp_CapabilityBoundingSet}"
-    temp_AmbientCapabilities="#${temp_AmbientCapabilities}"
-    temp_NoNewPrivileges="#${temp_NoNewPrivileges}"
-  fi
   cat >/etc/systemd/system/xray.service <<EOF
 [Unit]
 Description=Xray Service
@@ -545,10 +602,12 @@ Documentation=https://github.com/xtls
 After=network.target nss-lookup.target
 
 [Service]
-User=$INSTALL_USER
-${temp_CapabilityBoundingSet}
-${temp_AmbientCapabilities}
-${temp_NoNewPrivileges}
+User=xray
+Group=xray
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+UMask=0077
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
 Restart=on-failure
 RestartPreventExitStatus=23
@@ -567,10 +626,12 @@ Documentation=https://github.com/xtls
 After=network.target nss-lookup.target
 
 [Service]
-User=$INSTALL_USER
-${temp_CapabilityBoundingSet}
-${temp_AmbientCapabilities}
-${temp_NoNewPrivileges}
+User=xray
+Group=xray
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+UMask=0077
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/%i.json
 Restart=on-failure
 RestartPreventExitStatus=23
@@ -584,17 +645,22 @@ WantedBy=multi-user.target
 EOF
   chmod 644 /etc/systemd/system/xray.service /etc/systemd/system/xray@.service
   if [[ -n "$JSONS_PATH" ]]; then
-    "rm" '/etc/systemd/system/xray.service.d/10-donot_touch_single_conf.conf' \
+    "rm" -f '/etc/systemd/system/xray.service.d/10-donot_touch_single_conf.conf' \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_single_conf.conf'
     echo "# In case you have a good reason to do so, duplicate this file in the same directory and make your customizes there.
 # Or all changes you made will be lost!  # Refer: https://www.freedesktop.org/software/systemd/man/systemd.unit.html
 [Service]
 ExecStart=
-ExecStart=/usr/local/bin/xray run -confdir $JSONS_PATH" |
-      tee '/etc/systemd/system/xray.service.d/10-donot_touch_multi_conf.conf' > \
-        '/etc/systemd/system/xray@.service.d/10-donot_touch_multi_conf.conf'
+ExecStart=/usr/local/bin/xray run -confdir $JSONS_PATH" > \
+      '/etc/systemd/system/xray.service.d/10-donot_touch_multi_conf.conf'
+    echo "# In case you have a good reason to do so, duplicate this file in the same directory and make your customizes there.
+# Or all changes you made will be lost!  # Refer: https://www.freedesktop.org/software/systemd/man/systemd.unit.html
+[Service]
+ExecStart=
+ExecStart=/usr/local/bin/xray run -confdir ${JSONS_PATH%/}/%i/" > \
+      '/etc/systemd/system/xray@.service.d/10-donot_touch_multi_conf.conf'
   else
-    "rm" '/etc/systemd/system/xray.service.d/10-donot_touch_multi_conf.conf' \
+    "rm" -f '/etc/systemd/system/xray.service.d/10-donot_touch_multi_conf.conf' \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_multi_conf.conf'
     echo "# In case you have a good reason to do so, duplicate this file in the same directory and make your customizes there.
 # Or all changes you made will be lost!  # Refer: https://www.freedesktop.org/software/systemd/man/systemd.unit.html
@@ -625,25 +691,27 @@ ExecStart=/usr/local/bin/xray run -config ${JSON_PATH}/%i.json" > \
 
 start_xray() {
   if [[ -f '/etc/systemd/system/xray.service' ]]; then
-    systemctl start "${XRAY_CUSTOMIZE:-xray}"
+    systemctl start "${XRAY_CUSTOMIZE[@]:-xray}"
     sleep 1s
-    if systemctl -q is-active "${XRAY_CUSTOMIZE:-xray}"; then
-      echo 'info: Start the Xray service.'
-    else
-      echo 'error: Failed to start Xray service.'
-      exit 1
-    fi
+    local xray_daemon
+    for xray_daemon in "${XRAY_CUSTOMIZE[@]:-xray}"; do
+      if ! systemctl -q is-active "$xray_daemon"; then
+        echo 'error: Failed to start Xray service.'
+        exit 1
+      fi
+    done
+    echo 'info: Start the Xray service.'
   fi
 }
 
 stop_xray() {
-  XRAY_CUSTOMIZE="$(systemctl list-units | grep 'xray@' | awk -F ' ' '{print $1}')"
-  if [[ -z "$XRAY_CUSTOMIZE" ]]; then
-    local xray_daemon_to_stop='xray.service'
-  else
-    local xray_daemon_to_stop="$XRAY_CUSTOMIZE"
+  local xray_units
+  xray_units="$(systemctl list-units | awk '$1 == "xray.service" || $1 ~ /^xray@.*\.service$/ {print $1}')"
+  XRAY_CUSTOMIZE=()
+  if [[ -n "$xray_units" ]]; then
+    readarray -t XRAY_CUSTOMIZE <<<"$xray_units"
   fi
-  if ! systemctl stop "$xray_daemon_to_stop"; then
+  if ! systemctl stop "${XRAY_CUSTOMIZE[@]:-xray.service}"; then
     echo 'error: Stopping the Xray service failed.'
     exit 1
   fi
@@ -652,7 +720,7 @@ stop_xray() {
 
 install_with_logrotate() {
   install_software 'logrotate' 'logrotate'
-  if [[ -z "$LOGROTATE_TIME" ]]; then
+  if [[ -z "${LOGROTATE_TIME:-}" ]]; then
     LOGROTATE_TIME="00:00:00"
   fi
   cat <<EOF >/etc/systemd/system/logrotate@.service
@@ -676,9 +744,9 @@ Persistent=true
 WantedBy=timers.target
 EOF
   if [[ ! -d '/etc/logrotate.d/' ]]; then
-    install -d -m 700 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" /etc/logrotate.d/
     LOGROTATE_DIR='1'
   fi
+  install -d -m 755 -o 0 -g 0 /etc/logrotate.d/
   cat <<EOF >/etc/logrotate.d/xray
 /var/log/xray/*.log {
     daily
@@ -687,13 +755,14 @@ EOF
     compress
     delaycompress
     notifempty
-    create 0600 $INSTALL_USER_UID $INSTALL_USER_GID
+    copytruncate
 }
 EOF
   LOGROTATE_FIN='1'
 }
 
 install_geodata() {
+  create_xray_user
   download_geodata() {
     if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}" "${1}"; then
       echo 'error: Download failed! Please check your network or try again.'
@@ -711,6 +780,7 @@ install_geodata() {
   local file_site='geosite.dat'
   local dir_tmp
   dir_tmp="$(mktemp -d)"
+  TMP_PATHS+=("$dir_tmp")
   [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '0' ]] && echo "warning: Xray was not installed"
   download_geodata $download_link_geoip $file_ip
   download_geodata $download_link_geosite $file_dlc
@@ -723,8 +793,8 @@ install_geodata() {
   done
   cd - >/dev/null || exit 1
   install_geodata_dir
-  install -m 644 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "${dir_tmp}"/${file_dlc} "${DAT_PATH}"/${file_site}
-  install -m 644 -o "$INSTALL_USER_UID" -g "$INSTALL_USER_GID" "${dir_tmp}"/${file_ip} "${DAT_PATH}"/${file_ip}
+  install -m 644 -o xray -g xray "${dir_tmp}"/${file_dlc} "${DAT_PATH}"/${file_site}
+  install -m 644 -o xray -g xray "${dir_tmp}"/${file_ip} "${DAT_PATH}"/${file_ip}
   rm -r "${dir_tmp}"
   exit 0
 }
@@ -743,7 +813,7 @@ check_update() {
 }
 
 remove_xray() {
-  if systemctl list-unit-files | grep -qw 'xray'; then
+  if systemctl list-unit-files | grep -w 'xray' >/dev/null; then
     if [[ -n "$(pidof xray)" ]]; then
       stop_xray
     fi
@@ -762,7 +832,7 @@ remove_xray() {
     fi
     systemctl disable xray
     if [[ -f '/etc/systemd/system/logrotate@.timer' ]]; then
-      if ! systemctl stop logrotate@xray.timer && systemctl disable logrotate@xray.timer; then
+      if ! systemctl stop logrotate@xray.timer || ! systemctl disable logrotate@xray.timer; then
         echo 'error: Stopping and disabling the logrotate service failed.'
         exit 1
       fi
@@ -811,9 +881,11 @@ show_help() {
   echo '    --version                 Install the specified version of Xray, e.g., --version v1.0.0'
   echo '    -f, --force               Force install even though the versions are same'
   echo '    --beta                    Install the pre-release version if it is exist'
-  echo '    -l, --local               Install Xray from a local file'
+  echo '    -l, --local <zip>         Install a local Xray zip without accessing GitHub'
+  echo '                              Relative paths use the current working directory; quote paths containing spaces'
+  echo '                              Verify <zip>.dgst if present; warn and continue if absent'
+  echo '                              Missing tools may be installed from system package repositories'
   echo '    -p, --proxy               Download through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
-  echo '    -u, --install-user        Install Xray in specified user, e.g, -u root'
   echo '    --reinstall               Reinstall current Xray version'
   echo "    --no-update-service       Don't change service files if they are exist"
   echo "    --without-geodata         Don't install/update geoip.dat and geosite.dat"
@@ -830,9 +902,13 @@ show_help() {
 }
 
 main() {
-  check_if_running_as_root || return 1
-  identify_the_operating_system_and_architecture || return 1
-  judgment_parameters "$@" || return 1
+  judgment_parameters "$@"
+  [[ "$HELP" -eq '1' ]] && show_help
+  check_if_running_as_root
+  identify_the_operating_system_and_architecture
+  if [[ -n "$LOCAL_FILE" ]]; then
+    verify_local_archive
+  fi
 
   install_software "$package_provide_tput" 'tput'
   red=$(tput setaf 1)
@@ -841,31 +917,22 @@ main() {
   reset=$(tput sgr0)
 
   # Parameter information
-  [[ "$HELP" -eq '1' ]] && show_help
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_xray
-  [[ "$INSTALL_GEODATA" -eq '1' ]] && {
-    check_install_user
-    install_geodata
-  }
+  [[ "$INSTALL_GEODATA" -eq '1' ]] && install_geodata
 
-  # Check if the user is effective
-  check_install_user
-
-  # Check Logrotate after Check User
   [[ "$LOGROTATE" -eq '1' ]] && install_with_logrotate
 
   # Two very important variables
   TMP_DIRECTORY="$(mktemp -d)"
+  TMP_PATHS+=("$TMP_DIRECTORY")
   ZIP_FILE="${TMP_DIRECTORY}/Xray-linux-$MACHINE.zip"
 
-  # Install Xray from a local file, but still need to make sure the network is available
+  # Local archives never require GitHub; missing tools may use system repositories.
   if [[ -n "$LOCAL_FILE" ]]; then
-    echo 'warn: Install Xray from a local file, but still need to make sure the network is available.'
-    echo -n 'warn: Please make sure the file is valid because we cannot confirm it. (Press any key) ...'
-    read -r
     install_software 'unzip' 'unzip'
     decompression "$LOCAL_FILE"
+    check_local_xray_version
   else
     get_current_version
     if [[ "$REINSTALL" -eq '1' ]]; then
@@ -908,12 +975,13 @@ main() {
   fi
 
   # Determine if Xray is running
-  if systemctl list-unit-files | grep -qw 'xray'; then
+  if systemctl list-unit-files | grep -w 'xray' >/dev/null; then
     if [[ -n "$(pidof xray)" ]]; then
       stop_xray
       XRAY_RUNNING='1'
     fi
   fi
+  create_xray_user
   install_xray
   [[ "$N_UP_SERVICE" -eq '1' && -f '/etc/systemd/system/xray.service' ]] || install_startup_service_file
   echo 'installed: /usr/local/bin/xray'
@@ -943,8 +1011,6 @@ main() {
   fi
   if [[ "$LOG" -eq '1' ]]; then
     echo 'installed: /var/log/xray/'
-    echo 'installed: /var/log/xray/access.log'
-    echo 'installed: /var/log/xray/error.log'
   fi
   if [[ "$LOGROTATE_FIN" -eq '1' ]]; then
     echo 'installed: /etc/systemd/system/logrotate@.service'
@@ -972,7 +1038,9 @@ main() {
   echo "info: Xray $CURRENT_VERSION is installed."
   echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"
   if [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '1' ]] && [[ "$FORCE" -eq '0' ]] && [[ "$REINSTALL" -eq '0' ]]; then
-    [[ "$XRAY_RUNNING" -eq '1' ]] && start_xray
+    if [[ "$XRAY_RUNNING" -eq '1' ]]; then
+      start_xray
+    fi
   else
     systemctl start xray
     systemctl enable xray
