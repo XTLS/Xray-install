@@ -911,10 +911,10 @@ main() {
   fi
 
   install_software "$package_provide_tput" 'tput'
-  red=$(tput setaf 1)
-  green=$(tput setaf 2)
-  aoi=$(tput setaf 6)
-  reset=$(tput sgr0)
+  red=$(tput setaf 1 2>/dev/null || true)
+  green=$(tput setaf 2 2>/dev/null || true)
+  aoi=$(tput setaf 6 2>/dev/null || true)
+  reset=$(tput sgr0 2>/dev/null || true)
 
   # Parameter information
   [[ "$CHECK" -eq '1' ]] && check_update
