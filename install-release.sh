@@ -604,8 +604,8 @@ After=network.target nss-lookup.target
 [Service]
 User=xray
 Group=xray
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
 NoNewPrivileges=yes
 UMask=0077
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
@@ -628,8 +628,8 @@ After=network.target nss-lookup.target
 [Service]
 User=xray
 Group=xray
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
 NoNewPrivileges=yes
 UMask=0077
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/%i.json
