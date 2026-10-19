@@ -56,6 +56,12 @@ sh install-release.sh --logrotate
 
 Alpine 會啟用 `crond`；Gentoo 需確保 cron 服務正在執行。
 
+## 更多幫助
+
+```sh
+sh install-release.sh help
+```
+
 ## 管理指令
 
 使用多實例時，將 `xray.a` 的設定放入 `/usr/local/etc/xray/a/`，在 `/etc/conf.d/xray.a` 中設定 `confdir="/usr/local/etc/xray/a/"`，然後執行：

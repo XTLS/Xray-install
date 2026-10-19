@@ -56,6 +56,12 @@ sh install-release.sh --logrotate
 
 Alpine enables `crond`; on Gentoo, ensure a cron service is running.
 
+## More Help
+
+```sh
+sh install-release.sh help
+```
+
 ## Management Commands
 
 For multiple instances, put the configuration files for `xray.a` in `/usr/local/etc/xray/a/` and set `confdir="/usr/local/etc/xray/a/"` in `/etc/conf.d/xray.a`, then run:

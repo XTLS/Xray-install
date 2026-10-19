@@ -45,6 +45,12 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove
 ```
 
+**Check for updates**
+
+```sh
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ check
+```
+
 ## Install from a local archive (alternative)
 
 Download the [installation script](install-release.sh) and the [Xray-core zip](https://github.com/XTLS/Xray-core/releases) for your architecture, then run as root (x86_64 example):
@@ -54,6 +60,14 @@ bash install-release.sh install --local ./Xray-linux-64.zip
 ```
 
 ## Advance
+
+**Install or upgrade through a proxy**
+
+```sh
+bash -c "$(curl -x http://127.0.0.1:8118 -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --proxy http://127.0.0.1:8118
+```
+
+`--proxy` supports HTTP and SOCKS proxies and also applies to `install-geodata` and `check`.
 
 **Install & Upgrade Xray-core to a pre-release version**
 
@@ -85,6 +99,18 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
 ```
+
+## Other options
+
+`install` also accepts:
+
+| Option                | Description                      |
+| --------------------- | -------------------------------- |
+| `--version <version>` | Install a specified version.     |
+| `--force`             | Force installation.              |
+| `--reinstall`         | Reinstall the current version.   |
+| `--no-update-service` | Keep existing service files.     |
+| `--without-logfiles`  | Skip creating the log directory. |
 
 ## Multiple instances
 

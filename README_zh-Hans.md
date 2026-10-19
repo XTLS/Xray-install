@@ -46,6 +46,12 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove
 ```
 
+**检查更新**
+
+```sh
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ check
+```
+
 ## 从本地压缩包安装（备选方式）
 
 下载[安装脚本](install-release.sh)及对应系统架构的 [Xray-core 压缩包](https://github.com/XTLS/Xray-core/releases)，以 root 身份运行。以下以 x86_64 为例：
@@ -55,6 +61,14 @@ bash install-release.sh install --local ./Xray-linux-64.zip
 ```
 
 ## 高级用法
+
+**通过代理安装或升级**
+
+```sh
+bash -c "$(curl -x http://127.0.0.1:8118 -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --proxy http://127.0.0.1:8118
+```
+
+`--proxy` 支持 HTTP 和 SOCKS 代理，也适用于 `install-geodata` 和 `check`。
 
 **安装并升级 Xray-core 到预发布版本**
 
@@ -86,6 +100,18 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
 ```
+
+## 其他参数
+
+`install` 还支持以下参数：
+
+| 参数                  | 说明               |
+| --------------------- | ------------------ |
+| `--version <version>` | 安装指定版本。     |
+| `--force`             | 强制安装。         |
+| `--reinstall`         | 重新安装当前版本。 |
+| `--no-update-service` | 保留已有服务文件。 |
+| `--without-logfiles`  | 不创建日志目录。   |
 
 ## 多实例
 
