@@ -54,13 +54,7 @@ Download the [installation script](install-release.sh) and the [Xray-core zip](h
 sh install-release.sh --local ./Xray-linux-64.zip
 ```
 
-Use `--geoip` and `--geosite` to supply local data. Each option is independent; omitted options use the bundled data:
-
-```sh
-sh install-release.sh --local ./Xray-linux-64.zip \
-  --geoip ./geoip-full.dat \
-  --geosite ./geosite.dat
-```
+Use `--geoip` and `--geosite` independently to supply local data; omitted options use the bundled data.
 
 ## Log rotation
 

@@ -54,13 +54,7 @@ sh install-release.sh --beta
 sh install-release.sh --local ./Xray-linux-64.zip
 ```
 
-可用 `--geoip` 和 `--geosite` 指定本地数据；两个参数可单独使用，未指定时使用包内数据：
-
-```sh
-sh install-release.sh --local ./Xray-linux-64.zip \
-  --geoip ./geoip-full.dat \
-  --geosite ./geosite.dat
-```
+可用 `--geoip` 和 `--geosite` 指定本地数据；两个参数可单独使用，未指定时使用包内数据。
 
 ## 日志轮转
 
