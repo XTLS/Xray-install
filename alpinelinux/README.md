@@ -30,6 +30,12 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 sh install-release.sh
 ```
 
+## Proxy
+
+```sh
+sh install-release.sh --proxy http://127.0.0.1:8118
+```
+
 ## Pre-releases
 
 Install or upgrade to the latest available release, including pre-releases:
@@ -55,6 +61,12 @@ sh install-release.sh --logrotate
 ```
 
 Alpine enables `crond`; on Gentoo, ensure a cron service is running.
+
+## More Help
+
+```sh
+sh install-release.sh help
+```
 
 ## Management Commands
 
