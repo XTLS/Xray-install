@@ -60,6 +60,8 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash install-release.sh install --local ./Xray-linux-64.zip
 ```
 
+可用 `--geoip` 和 `--geosite` 指定本地数据；两个参数可单独使用，未指定时使用包内数据。
+
 ## 高级用法
 
 **通过代理安装或升级**
