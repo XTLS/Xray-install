@@ -655,7 +655,7 @@ install_startup_service_file() {
   cat >/etc/systemd/system/xray.service <<EOF
 [Unit]
 Description=Xray Service
-Documentation=https://github.com/xtls
+Documentation=https://xtls.github.io/
 After=network.target nss-lookup.target
 
 [Service]
@@ -679,7 +679,7 @@ EOF
   cat >/etc/systemd/system/xray@.service <<EOF
 [Unit]
 Description=Xray Service
-Documentation=https://github.com/xtls
+Documentation=https://xtls.github.io/
 After=network.target nss-lookup.target
 
 [Service]
