@@ -21,15 +21,14 @@
 - /usr/local/share/xray/geoip.dat
 - /usr/local/share/xray/geosite.dat
 
-- /var/log/xray/access.log
-- /var/log/xray/error.log
+- /var/log/xray/
 ```
 
 注意：Xray 預設不會將日誌記錄到 `/var/log/xray/*.log`。請配置 `"log"` 來指定日誌檔案。
 
 ## 基本用法
 
-**安裝並升級 Xray-core 和地理數據，預設使用 `User=nobody`，但不會覆蓋已有服務檔案中的 `User` 設定**
+**安裝並升級 Xray-core 和地理數據**
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -45,6 +44,14 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove
+```
+
+## 從本機壓縮檔安裝（備選方式）
+
+下載[安裝腳本](install-release.sh)及對應系統架構的 [Xray-core 壓縮檔](https://github.com/XTLS/Xray-core/releases)，以 root 身分執行。以下以 x86_64 為例：
+
+```sh
+bash install-release.sh install --local ./Xray-linux-64.zip
 ```
 
 ## 進階用法
@@ -68,12 +75,6 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 - /etc/logrotate.d/xray
 ```
 
-**安裝並升級 Xray-core 和地理數據，使用 `User=root`，會覆蓋已有服務檔案中的 `User` 設定**
-
-```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u root
-```
-
 **安裝並升級 Xray-core，但不包含地理數據**
 
 ```
@@ -85,6 +86,16 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
 ```
+
+## 多實例
+
+安裝時設定 `JSONS_PATH` 以使用設定目錄：
+
+```sh
+JSONS_PATH=/usr/local/etc/xray bash install-release.sh install
+```
+
+`xray.service` 讀取 `JSONS_PATH`，`xray@a.service` 讀取 `JSONS_PATH/a/`。將各實例的設定放入對應目錄後，使用 `systemctl enable --now xray@a` 啟動。
 
 ## 更多用法
 
