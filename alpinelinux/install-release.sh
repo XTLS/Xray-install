@@ -5,6 +5,8 @@ set -euo pipefail
 
 LOCAL_FILE=''
 PROXY=''
+LOCAL_GEOIP=''
+LOCAL_GEOSITE=''
 HELP='0'
 UPDATE_GEODATA='0'
 LOGROTATE='0'
@@ -39,6 +41,20 @@ judgment_parameters() {
                 ;;
             esac
             PROXY="$2"
+            shift
+            ;;
+        --geoip | --geosite)
+            case "${2:-}" in
+            '' | -*)
+                echo "error: Please specify a local geodata file after $1."
+                return 1
+                ;;
+            esac
+            if [ "$1" = --geoip ]; then
+                LOCAL_GEOIP="$2"
+            else
+                LOCAL_GEOSITE="$2"
+            fi
             shift
             ;;
         --logrotate)
@@ -81,6 +97,10 @@ judgment_parameters() {
         echo 'error: --beta and --local cannot be used together.'
         return 1
     fi
+    if { [ -n "$LOCAL_GEOIP" ] || [ -n "$LOCAL_GEOSITE" ]; } && [ -z "$LOCAL_FILE" ]; then
+        echo 'error: --geoip and --geosite can only be used with --local.'
+        return 1
+    fi
 }
 
 show_help() {
@@ -92,7 +112,9 @@ show_help() {
     echo '                     Relative paths use the current working directory; quote paths containing spaces'
     echo '                     Verify <zip>.dgst if present; warn and continue if absent'
     echo '                     Missing tools may be installed from system package repositories'
-    echo '                     The archive must contain xray, geoip.dat and geosite.dat'
+    echo '                     Uses bundled geodata unless --geoip or --geosite is specified'
+    echo '      --geoip <file>  Use a local GeoIP file with --local'
+    echo '      --geosite <file> Use a local GeoSite file with --local'
     echo '      --proxy <URL>  Download through an HTTP or SOCKS proxy'
     echo '      --logrotate    Enable daily log rotation, keeping seven archives'
     echo '      --beta         Install the latest available release, including pre-releases'
@@ -146,6 +168,33 @@ check_local_xray_version() {
         echo 'error: Local xray binary cannot run. Please check its architecture and format.'
         return 1
     fi
+}
+
+check_local_geodata() {
+    local file
+    for file in "$LOCAL_GEOIP" "$LOCAL_GEOSITE"; do
+        [ -n "$file" ] || continue
+        if [ ! -f "$file" ] || [ ! -r "$file" ] || [ ! -s "$file" ]; then
+            echo "error: Local geodata must be a readable, non-empty file: $file"
+            return 1
+        fi
+    done
+}
+
+prepare_local_geodata() {
+    local file
+    if [ -n "$LOCAL_GEOIP" ]; then
+        cp "$LOCAL_GEOIP" "${TMP_DIRECTORY}geoip.dat"
+    fi
+    if [ -n "$LOCAL_GEOSITE" ]; then
+        cp "$LOCAL_GEOSITE" "${TMP_DIRECTORY}geosite.dat"
+    fi
+    for file in geoip.dat geosite.dat; do
+        if [ ! -f "${TMP_DIRECTORY}$file" ] || [ ! -r "${TMP_DIRECTORY}$file" ] || [ ! -s "${TMP_DIRECTORY}$file" ]; then
+            echo "error: Missing, empty or unreadable geodata: $file"
+            return 1
+        fi
+    done
 }
 
 pkg_manager() {
@@ -577,14 +626,11 @@ main() {
     identify_architecture
     if [ -n "$LOCAL_FILE" ]; then
         verify_local_archive
+        check_local_geodata
         install_dependencies unzip
     else
         install_dependencies curl unzip
     fi
-    if [ "$LOGROTATE" -eq '1' ]; then
-        install_with_logrotate
-    fi
-
     ZIP_FILE="${TMP_DIRECTORY}Xray-linux-$MACHINE.zip"
     DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$MACHINE.zip"
 
@@ -600,6 +646,10 @@ main() {
     decompression
     if [ -n "$LOCAL_FILE" ]; then
         check_local_xray_version
+        prepare_local_geodata
+    fi
+    if [ "$LOGROTATE" -eq '1' ]; then
+        install_with_logrotate
     fi
     create_xray_user
     is_it_running

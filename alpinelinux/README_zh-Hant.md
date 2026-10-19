@@ -54,6 +54,14 @@ sh install-release.sh --beta
 sh install-release.sh --local ./Xray-linux-64.zip
 ```
 
+可用 `--geoip` 和 `--geosite` 指定本機資料；兩個參數可單獨使用，未指定時使用套件內附資料：
+
+```sh
+sh install-release.sh --local ./Xray-linux-64.zip \
+  --geoip ./geoip-full.dat \
+  --geosite ./geosite.dat
+```
+
 ## 日誌輪替
 
 啟用每日輪替，保留 7 份日誌：
