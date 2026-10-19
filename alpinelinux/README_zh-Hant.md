@@ -36,6 +36,8 @@ sh install-release.sh
 sh install-release.sh --proxy http://127.0.0.1:8118
 ```
 
+`--proxy` 也適用於 `update-geodata`。
+
 ## 預發佈版本
 
 安裝或升級至最新版本（包含預發佈版本）：
@@ -61,6 +63,16 @@ sh install-release.sh --logrotate
 ```
 
 Alpine 會啟用 `crond`；Gentoo 需確保 cron 服務正在執行。
+
+## 下載／更新 geodata
+
+以 root 身分執行，僅下載／更新 geodata：
+
+```sh
+sh install-release.sh update-geodata
+```
+
+**Xray 內附的是 GeoIP lite，此指令下載 GeoIP full 和 GeoSite。** 資料來自 [XTLS/Xray-rules-dat](https://github.com/XTLS/Xray-rules-dat)。
 
 ## 更多幫助
 

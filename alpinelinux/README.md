@@ -36,6 +36,8 @@ sh install-release.sh
 sh install-release.sh --proxy http://127.0.0.1:8118
 ```
 
+`--proxy` also applies to `update-geodata`.
+
 ## Pre-releases
 
 Install or upgrade to the latest available release, including pre-releases:
@@ -61,6 +63,16 @@ sh install-release.sh --logrotate
 ```
 
 Alpine enables `crond`; on Gentoo, ensure a cron service is running.
+
+## Download/update geodata
+
+Run as root to download/update geodata only:
+
+```sh
+sh install-release.sh update-geodata
+```
+
+**Xray bundles GeoIP lite; this command downloads GeoIP full and GeoSite.** Data comes from [XTLS/Xray-rules-dat](https://github.com/XTLS/Xray-rules-dat).
 
 ## More Help
 
