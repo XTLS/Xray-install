@@ -70,7 +70,7 @@ sh install-release.sh help
 
 ## Management Commands
 
-For multiple instances, put the configuration files for `xray.a` in `/usr/local/etc/xray/a/` and set `confdir="/usr/local/etc/xray/a/"` in `/etc/conf.d/xray.a`, then run:
+For multiple instances, put the configuration files for `xray.a` in `/usr/local/etc/xray/a/`, then run:
 
 ```sh
 ln -s xray /etc/init.d/xray.a
@@ -78,7 +78,7 @@ rc-update add xray.a
 rc-service xray.a start
 ```
 
-Each instance can use a different `confdir`. Updates stop and restore only the instances that were running.
+Updates stop and restore only the instances that were running.
 
 #### Enable Xray Service (Auto-start on Boot)
 
