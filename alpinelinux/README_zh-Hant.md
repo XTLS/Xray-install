@@ -30,6 +30,12 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 sh install-release.sh
 ```
 
+## 代理
+
+```sh
+sh install-release.sh --proxy http://127.0.0.1:8118
+```
+
 ## 預發佈版本
 
 安裝或升級至最新版本（包含預發佈版本）：

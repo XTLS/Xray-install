@@ -4,6 +4,7 @@
 set -euo pipefail
 
 LOCAL_FILE=''
+PROXY=''
 HELP='0'
 LOGROTATE='0'
 BETA='0'
@@ -27,6 +28,16 @@ judgment_parameters() {
                 ;;
             esac
             LOCAL_FILE="$2"
+            shift
+            ;;
+        -p | --proxy)
+            case "${2:-}" in
+            '' | -*)
+                echo 'error: Please specify the proxy server address.'
+                return 1
+                ;;
+            esac
+            PROXY="$2"
             shift
             ;;
         --logrotate)
@@ -55,6 +66,10 @@ judgment_parameters() {
             echo 'error: --beta can only be used with install.'
             return 1
         fi
+        if [ -n "$PROXY" ]; then
+            echo 'error: --proxy can only be used with install.'
+            return 1
+        fi
         HELP='1'
     fi
     if [ -n "$LOCAL_FILE" ] && [ "$BETA" -eq '1' ]; then
@@ -71,6 +86,7 @@ show_help() {
     echo '                     Verify <zip>.dgst if present; warn and continue if absent'
     echo '                     Missing tools may be installed from system package repositories'
     echo '                     The archive must contain xray, geoip.dat and geosite.dat'
+    echo '      --proxy <URL>  Download through an HTTP or SOCKS proxy'
     echo '      --logrotate    Enable daily log rotation, keeping seven archives'
     echo '      --beta         Install the latest available release, including pre-releases'
 }
@@ -231,7 +247,7 @@ identify_architecture() {
 
 install_dependencies() {
     local dependency
-    for dependency do
+    for dependency; do
         if command -v "$dependency" >/dev/null 2>&1; then
             continue
         fi
@@ -243,9 +259,17 @@ install_dependencies() {
     done
 }
 
+curl_with_proxy() {
+    if [ -n "$PROXY" ]; then
+        curl --proxy "$PROXY" "$@"
+    else
+        curl "$@"
+    fi
+}
+
 get_prerelease() {
     local releases_file="${TMP_DIRECTORY}releases.json"
-    if ! curl -f -sSL -H 'Accept: application/vnd.github+json' -o "$releases_file" \
+    if ! curl_with_proxy -f -sSL -H 'Accept: application/vnd.github+json' -o "$releases_file" \
         'https://api.github.com/repos/XTLS/Xray-core/releases'; then
         echo 'error: Failed to get release list, please check your network.'
         return 1
@@ -272,12 +296,12 @@ get_prerelease() {
 
 download_xray() {
     echo "Downloading Xray files..."
-    if ! curl -f -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK" -#; then
+    if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK" -#; then
         echo 'error: Download failed! Please check your network or try again.'
         exit 1
     fi
 
-    if ! curl -f -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE.dgst" "$DOWNLOAD_LINK.dgst" -#; then
+    if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE.dgst" "$DOWNLOAD_LINK.dgst" -#; then
         echo 'error: Download failed! Please check your network or try again.'
         exit 1
     fi
