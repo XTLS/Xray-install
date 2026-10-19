@@ -27,7 +27,7 @@ Notice: Xray will NOT log to `/var/log/xray/*.log` by default. Configure `"log"`
 
 ## Basic Usage
 
-**Install & Upgrade Xray-core and geodata**
+**Install & Upgrade Xray-core**
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -36,7 +36,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 **Update geoip.dat and geosite.dat only**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install-geodata
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ update-geodata
 ```
 
 **Remove Xray, except json and logs**
@@ -67,7 +67,7 @@ bash install-release.sh install --local ./Xray-linux-64.zip
 bash -c "$(curl -x http://127.0.0.1:8118 -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --proxy http://127.0.0.1:8118
 ```
 
-`--proxy` supports HTTP and SOCKS proxies and also applies to `install-geodata` and `check`.
+`--proxy` supports HTTP and SOCKS proxies and also applies to `update-geodata` and `check`.
 
 **Install & Upgrade Xray-core to a pre-release version**
 
@@ -75,7 +75,7 @@ bash -c "$(curl -x http://127.0.0.1:8118 -L https://github.com/XTLS/Xray-install
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --beta
 ```
 
-**Install & Upgrade Xray-core and geodata with `logrotate`, `$time` can be in the format of 12:34:56**
+**Install & Upgrade Xray-core with `logrotate`, `$time` can be in the format of 12:34:56**
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --logrotate $time

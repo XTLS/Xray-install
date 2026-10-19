@@ -53,8 +53,8 @@ INSTALL_VERSION=''
 # install
 INSTALL='0'
 
-# install-geodata
-INSTALL_GEODATA='0'
+# update-geodata
+UPDATE_GEODATA='0'
 
 # remove
 REMOVE='0'
@@ -254,8 +254,8 @@ judgment_parameters() {
     'install')
       INSTALL='1'
       ;;
-    'install-geodata')
-      INSTALL_GEODATA='1'
+    'update-geodata')
+      UPDATE_GEODATA='1'
       ;;
     'remove')
       REMOVE='1'
@@ -329,9 +329,9 @@ judgment_parameters() {
     esac
     shift
   done
-  if ((INSTALL + INSTALL_GEODATA + HELP + CHECK + REMOVE == 0)); then
+  if ((INSTALL + UPDATE_GEODATA + HELP + CHECK + REMOVE == 0)); then
     INSTALL='1'
-  elif ((INSTALL + INSTALL_GEODATA + HELP + CHECK + REMOVE > 1)); then
+  elif ((INSTALL + UPDATE_GEODATA + HELP + CHECK + REMOVE > 1)); then
     echo 'You can only choose one action.'
     return 1
   fi
@@ -553,7 +553,7 @@ install_xray() {
   if [[ -d "$DAT_PATH" ]]; then
     chown -hR xray:xray "$DAT_PATH"
   fi
-  # If the file exists, geoip.dat and geosite.dat will not be installed or updated
+  # Skip archive geodata when --without-geodata or $DAT_PATH/.undat is present.
   if [[ "$NO_GEODATA" -eq '0' ]] && [[ ! -f "${DAT_PATH}/.undat" ]]; then
     install_geodata_dir
     install_file geoip.dat
@@ -761,7 +761,7 @@ EOF
   LOGROTATE_FIN='1'
 }
 
-install_geodata() {
+update_geodata() {
   create_xray_user
   download_geodata() {
     if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}" "${1}"; then
@@ -870,7 +870,7 @@ show_help() {
   echo
   echo 'ACTION:'
   echo '  install                   Install/Update Xray'
-  echo '  install-geodata           Install/Update geoip.dat and geosite.dat only'
+  echo '  update-geodata            Update geoip.dat and geosite.dat only'
   echo '  remove                    Remove Xray'
   echo '  help                      Show help'
   echo '  check                     Check if Xray can be updated'
@@ -892,7 +892,7 @@ show_help() {
   echo "    --without-logfiles        Don't install /var/log/xray"
   echo "    --logrotate [time]        Install with logrotate."
   echo "                              [time] need be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
-  echo '  install-geodata:'
+  echo '  update-geodata:'
   echo '    -p, --proxy               Download through a proxy server'
   echo '  remove:'
   echo '    --purge                   Remove all the Xray files, include logs, configs, etc'
@@ -919,7 +919,7 @@ main() {
   # Parameter information
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_xray
-  [[ "$INSTALL_GEODATA" -eq '1' ]] && install_geodata
+  [[ "$UPDATE_GEODATA" -eq '1' ]] && update_geodata
 
   [[ "$LOGROTATE" -eq '1' ]] && install_with_logrotate
 
