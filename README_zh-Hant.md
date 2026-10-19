@@ -28,7 +28,7 @@
 
 ## 基本用法
 
-**安裝並升級 Xray-core 和地理數據**
+**安裝並升級 Xray-core**
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -37,7 +37,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 **僅更新 geoip.dat 和 geosite.dat**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install-geodata
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ update-geodata
 ```
 
 **移除 Xray，但保留 json 設定檔案和日誌**
@@ -68,7 +68,7 @@ bash install-release.sh install --local ./Xray-linux-64.zip
 bash -c "$(curl -x http://127.0.0.1:8118 -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --proxy http://127.0.0.1:8118
 ```
 
-`--proxy` 支援 HTTP 和 SOCKS 代理，也適用於 `install-geodata` 和 `check`。
+`--proxy` 支援 HTTP 和 SOCKS 代理，也適用於 `update-geodata` 和 `check`。
 
 **安裝並升級 Xray-core 到預發布版本**
 
@@ -76,7 +76,7 @@ bash -c "$(curl -x http://127.0.0.1:8118 -L https://github.com/XTLS/Xray-install
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --beta
 ```
 
-**安裝並升級 Xray-core 和地理數據，並啟用 `logrotate`，`$time` 可以是 12:34:56 格式的時間**
+**安裝並升級 Xray-core，並啟用 `logrotate`，`$time` 可以是 12:34:56 格式的時間**
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --logrotate $time
