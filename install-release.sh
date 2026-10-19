@@ -773,7 +773,7 @@ install_geodata() {
       exit 1
     fi
   }
-  local download_link_geoip="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geoip.dat"
+  local download_link_geoip="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geoip-full.dat"
   local download_link_geosite="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geosite.dat"
   local file_ip='geoip.dat'
   local file_site='geosite.dat'
