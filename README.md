@@ -59,6 +59,8 @@ Download the [installation script](install-release.sh) and the [Xray-core zip](h
 bash install-release.sh install --local ./Xray-linux-64.zip
 ```
 
+Use `--geoip` and `--geosite` independently to supply local data; omitted options use the bundled data.
+
 ## Advance
 
 **Install or upgrade through a proxy**
