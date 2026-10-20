@@ -30,6 +30,12 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 sh install-release.sh
 ```
 
+## 代理
+
+```sh
+sh install-release.sh --proxy http://127.0.0.1:8118
+```
+
 ## 预发布版本
 
 安装或升级到最新版本（包含预发布版本）：
@@ -56,9 +62,15 @@ sh install-release.sh --logrotate
 
 Alpine 会启用 `crond`；Gentoo 需确保 cron 服务正在运行。
 
+## 更多帮助
+
+```sh
+sh install-release.sh help
+```
+
 ## 管理命令
 
-使用多实例时，将 `xray.a` 的配置放入 `/usr/local/etc/xray/a/`，在 `/etc/conf.d/xray.a` 中设置 `confdir="/usr/local/etc/xray/a/"`，然后执行：
+使用多实例时，将 `xray.a` 的配置文件放入 `/usr/local/etc/xray/a/`，然后执行：
 
 ```sh
 ln -s xray /etc/init.d/xray.a
@@ -66,7 +78,7 @@ rc-update add xray.a
 rc-service xray.a start
 ```
 
-各实例可以使用不同的 `confdir`。升级仅停止并恢复原先运行的实例。
+升级仅停止并恢复原先运行的实例。
 
 #### 启用 Xray 服务 (开机自启)
 

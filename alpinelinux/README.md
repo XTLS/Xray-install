@@ -30,6 +30,12 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 sh install-release.sh
 ```
 
+## Proxy
+
+```sh
+sh install-release.sh --proxy http://127.0.0.1:8118
+```
+
 ## Pre-releases
 
 Install or upgrade to the latest available release, including pre-releases:
@@ -56,9 +62,15 @@ sh install-release.sh --logrotate
 
 Alpine enables `crond`; on Gentoo, ensure a cron service is running.
 
+## More Help
+
+```sh
+sh install-release.sh help
+```
+
 ## Management Commands
 
-For multiple instances, put the configuration files for `xray.a` in `/usr/local/etc/xray/a/` and set `confdir="/usr/local/etc/xray/a/"` in `/etc/conf.d/xray.a`, then run:
+For multiple instances, put the configuration files for `xray.a` in `/usr/local/etc/xray/a/`, then run:
 
 ```sh
 ln -s xray /etc/init.d/xray.a
@@ -66,7 +78,7 @@ rc-update add xray.a
 rc-service xray.a start
 ```
 
-Each instance can use a different `confdir`. Updates stop and restore only the instances that were running.
+Updates stop and restore only the instances that were running.
 
 #### Enable Xray Service (Auto-start on Boot)
 

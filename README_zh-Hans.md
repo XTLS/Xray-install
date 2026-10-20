@@ -28,7 +28,7 @@
 
 ## 基本用法
 
-**安装并升级 Xray-core 和地理数据**
+**安装并升级 Xray-core**
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -37,13 +37,19 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 **仅更新 geoip.dat 和 geosite.dat**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install-geodata
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ update-geodata
 ```
 
 **移除 Xray，但保留 json 配置文件和日志**
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove
+```
+
+**检查更新**
+
+```sh
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ check
 ```
 
 ## 从本地压缩包安装（备选方式）
@@ -54,7 +60,17 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash install-release.sh install --local ./Xray-linux-64.zip
 ```
 
+可用 `--geoip` 和 `--geosite` 指定本地数据；两个参数可单独使用，未指定时使用包内数据。
+
 ## 高级用法
+
+**通过代理安装或升级**
+
+```sh
+bash -c "$(curl -x http://127.0.0.1:8118 -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --proxy http://127.0.0.1:8118
+```
+
+`--proxy` 支持 HTTP 和 SOCKS 代理，也适用于 `update-geodata` 和 `check`。
 
 **安装并升级 Xray-core 到预发布版本**
 
@@ -62,7 +78,7 @@ bash install-release.sh install --local ./Xray-linux-64.zip
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --beta
 ```
 
-**安装并升级 Xray-core 和地理数据，并启用 `logrotate`，`$time` 可以是 12:34:56 格式的时间**
+**安装并升级 Xray-core，并启用 `logrotate`，`$time` 可以是 12:34:56 格式的时间**
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --logrotate $time
@@ -86,6 +102,18 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
 ```
+
+## 其他参数
+
+`install` 还支持以下参数：
+
+| 参数                  | 说明               |
+| --------------------- | ------------------ |
+| `--version <version>` | 安装指定版本。     |
+| `--force`             | 强制安装。         |
+| `--reinstall`         | 重新安装当前版本。 |
+| `--no-update-service` | 保留已有服务文件。 |
+| `--without-logfiles`  | 不创建日志目录。   |
 
 ## 多实例
 

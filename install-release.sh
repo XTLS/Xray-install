@@ -53,8 +53,8 @@ INSTALL_VERSION=''
 # install
 INSTALL='0'
 
-# install-geodata
-INSTALL_GEODATA='0'
+# update-geodata
+UPDATE_GEODATA='0'
 
 # remove
 REMOVE='0'
@@ -91,6 +91,10 @@ SPECIFIED_VERSION=''
 
 # --local ?
 LOCAL_FILE=''
+
+# --geoip / --geosite ?
+LOCAL_GEOIP=''
+LOCAL_GEOSITE=''
 
 # --proxy ?
 PROXY=''
@@ -254,8 +258,8 @@ judgment_parameters() {
     'install')
       INSTALL='1'
       ;;
-    'install-geodata')
-      INSTALL_GEODATA='1'
+    'update-geodata')
+      UPDATE_GEODATA='1'
       ;;
     'remove')
       REMOVE='1'
@@ -299,6 +303,18 @@ judgment_parameters() {
       LOCAL_FILE="$2"
       shift
       ;;
+    '--geoip' | '--geosite')
+      if [[ -z "${2:-}" || "$2" == -* ]]; then
+        echo "error: Please specify a local geodata file after $1."
+        return 1
+      fi
+      if [[ "$1" == '--geoip' ]]; then
+        LOCAL_GEOIP="$2"
+      else
+        LOCAL_GEOSITE="$2"
+      fi
+      shift
+      ;;
     '-p' | '--proxy')
       if [[ -z "${2:-}" || "$2" == -* ]]; then
         echo "error: Please specify the proxy server address."
@@ -329,9 +345,9 @@ judgment_parameters() {
     esac
     shift
   done
-  if ((INSTALL + INSTALL_GEODATA + HELP + CHECK + REMOVE == 0)); then
+  if ((INSTALL + UPDATE_GEODATA + HELP + CHECK + REMOVE == 0)); then
     INSTALL='1'
-  elif ((INSTALL + INSTALL_GEODATA + HELP + CHECK + REMOVE > 1)); then
+  elif ((INSTALL + UPDATE_GEODATA + HELP + CHECK + REMOVE > 1)); then
     echo 'You can only choose one action.'
     return 1
   fi
@@ -342,6 +358,16 @@ judgment_parameters() {
   if [[ "$INSTALL" -eq '1' ]] && ((temp_version + local_install + REINSTALL + BETA > 1)); then
     echo "--version,--reinstall,--beta and --local can't be used together."
     return 1
+  fi
+  if [[ -n "$LOCAL_GEOIP" || -n "$LOCAL_GEOSITE" ]]; then
+    if [[ -z "$LOCAL_FILE" ]]; then
+      echo 'error: --geoip and --geosite can only be used with --local.'
+      return 1
+    fi
+    if [[ "$NO_GEODATA" -eq '1' ]]; then
+      echo 'error: --geoip and --geosite cannot be used with --without-geodata.'
+      return 1
+    fi
   fi
 }
 
@@ -393,6 +419,37 @@ check_local_xray_version() {
     echo 'error: Local xray binary cannot run. Please check its architecture and format.'
     return 1
   fi
+}
+
+check_local_geodata() {
+  local file
+  for file in "$LOCAL_GEOIP" "$LOCAL_GEOSITE"; do
+    [[ -n "$file" ]] || continue
+    if [[ ! -f "$file" || ! -r "$file" || ! -s "$file" ]]; then
+      echo "error: Local geodata must be a readable, non-empty file: $file"
+      return 1
+    fi
+  done
+}
+
+prepare_local_geodata() {
+  # Preserve the existing switches that disable geodata installation.
+  if [[ "$NO_GEODATA" -eq '1' || -f "${DAT_PATH}/.undat" ]]; then
+    return 0
+  fi
+  local file
+  if [[ -n "$LOCAL_GEOIP" ]]; then
+    cp -- "$LOCAL_GEOIP" "${TMP_DIRECTORY}/geoip.dat"
+  fi
+  if [[ -n "$LOCAL_GEOSITE" ]]; then
+    cp -- "$LOCAL_GEOSITE" "${TMP_DIRECTORY}/geosite.dat"
+  fi
+  for file in geoip.dat geosite.dat; do
+    if [[ ! -f "${TMP_DIRECTORY}/$file" || ! -r "${TMP_DIRECTORY}/$file" || ! -s "${TMP_DIRECTORY}/$file" ]]; then
+      echo "error: Missing, empty or unreadable geodata: $file"
+      return 1
+    fi
+  done
 }
 
 install_software() {
@@ -553,7 +610,7 @@ install_xray() {
   if [[ -d "$DAT_PATH" ]]; then
     chown -hR xray:xray "$DAT_PATH"
   fi
-  # If the file exists, geoip.dat and geosite.dat will not be installed or updated
+  # Skip archive geodata when --without-geodata or $DAT_PATH/.undat is present.
   if [[ "$NO_GEODATA" -eq '0' ]] && [[ ! -f "${DAT_PATH}/.undat" ]]; then
     install_geodata_dir
     install_file geoip.dat
@@ -598,14 +655,14 @@ install_startup_service_file() {
   cat >/etc/systemd/system/xray.service <<EOF
 [Unit]
 Description=Xray Service
-Documentation=https://github.com/xtls
+Documentation=https://xtls.github.io/
 After=network.target nss-lookup.target
 
 [Service]
 User=xray
 Group=xray
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
 NoNewPrivileges=yes
 UMask=0077
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
@@ -622,14 +679,14 @@ EOF
   cat >/etc/systemd/system/xray@.service <<EOF
 [Unit]
 Description=Xray Service
-Documentation=https://github.com/xtls
+Documentation=https://xtls.github.io/
 After=network.target nss-lookup.target
 
 [Service]
 User=xray
 Group=xray
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
 NoNewPrivileges=yes
 UMask=0077
 ExecStart=/usr/local/bin/xray run -config /usr/local/etc/xray/%i.json
@@ -761,7 +818,7 @@ EOF
   LOGROTATE_FIN='1'
 }
 
-install_geodata() {
+update_geodata() {
   create_xray_user
   download_geodata() {
     if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}" "${1}"; then
@@ -869,7 +926,7 @@ show_help() {
   echo
   echo 'ACTION:'
   echo '  install                   Install/Update Xray'
-  echo '  install-geodata           Install/Update geoip.dat and geosite.dat only'
+  echo '  update-geodata            Update geoip.dat and geosite.dat only'
   echo '  remove                    Remove Xray'
   echo '  help                      Show help'
   echo '  check                     Check if Xray can be updated'
@@ -884,6 +941,9 @@ show_help() {
   echo '                              Relative paths use the current working directory; quote paths containing spaces'
   echo '                              Verify <zip>.dgst if present; warn and continue if absent'
   echo '                              Missing tools may be installed from system package repositories'
+  echo '                              Uses bundled geodata unless --geoip or --geosite is specified'
+  echo '    --geoip <file>            Use a local GeoIP file with --local'
+  echo '    --geosite <file>          Use a local GeoSite file with --local'
   echo '    -p, --proxy               Download through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
   echo '    --reinstall               Reinstall current Xray version'
   echo "    --no-update-service       Don't change service files if they are exist"
@@ -891,7 +951,7 @@ show_help() {
   echo "    --without-logfiles        Don't install /var/log/xray"
   echo "    --logrotate [time]        Install with logrotate."
   echo "                              [time] need be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
-  echo '  install-geodata:'
+  echo '  update-geodata:'
   echo '    -p, --proxy               Download through a proxy server'
   echo '  remove:'
   echo '    --purge                   Remove all the Xray files, include logs, configs, etc'
@@ -907,20 +967,19 @@ main() {
   identify_the_operating_system_and_architecture
   if [[ -n "$LOCAL_FILE" ]]; then
     verify_local_archive
+    check_local_geodata
   fi
 
   install_software "$package_provide_tput" 'tput'
-  red=$(tput setaf 1)
-  green=$(tput setaf 2)
-  aoi=$(tput setaf 6)
-  reset=$(tput sgr0)
+  red=$(tput setaf 1 2>/dev/null || true)
+  green=$(tput setaf 2 2>/dev/null || true)
+  aoi=$(tput setaf 6 2>/dev/null || true)
+  reset=$(tput sgr0 2>/dev/null || true)
 
   # Parameter information
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_xray
-  [[ "$INSTALL_GEODATA" -eq '1' ]] && install_geodata
-
-  [[ "$LOGROTATE" -eq '1' ]] && install_with_logrotate
+  [[ "$UPDATE_GEODATA" -eq '1' ]] && update_geodata
 
   # Two very important variables
   TMP_DIRECTORY="$(mktemp -d)"
@@ -932,6 +991,7 @@ main() {
     install_software 'unzip' 'unzip'
     decompression "$LOCAL_FILE"
     check_local_xray_version
+    prepare_local_geodata
   else
     get_current_version
     if [[ "$REINSTALL" -eq '1' ]]; then
@@ -972,6 +1032,8 @@ main() {
     fi
     decompression "$ZIP_FILE"
   fi
+
+  [[ "$LOGROTATE" -eq '1' ]] && install_with_logrotate
 
   # Determine if Xray is running
   if systemctl list-unit-files | grep -w 'xray' >/dev/null; then
