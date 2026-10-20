@@ -1,4 +1,4 @@
-# Xray-install for Alpine Linux
+# Xray-install for Alpine Linux / Gentoo
 
 English | [简体中文](README_zh-Hans.md) | [繁體中文](README_zh-Hant.md)
 
@@ -6,8 +6,16 @@ English | [简体中文](README_zh-Hans.md) | [繁體中文](README_zh-Hant.md)
 
 #### Install cURL
 
+**Alpine Linux:**
+
 ```sh
 apk add curl
+```
+
+**Gentoo:**
+
+```sh
+emerge net-misc/curl
 ```
 
 #### Download Installation Script
@@ -19,10 +27,58 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 #### Run Installation Script
 
 ```sh
-ash install-release.sh
+sh install-release.sh
+```
+
+## Proxy
+
+```sh
+sh install-release.sh --proxy http://127.0.0.1:8118
+```
+
+## Pre-releases
+
+Install or upgrade to the latest available release, including pre-releases:
+
+```sh
+sh install-release.sh --beta
+```
+
+## Install from a local archive (alternative)
+
+Download the [installation script](install-release.sh) and the [Xray-core zip](https://github.com/XTLS/Xray-core/releases) for your architecture, then run as root (x86_64 example):
+
+```sh
+sh install-release.sh --local ./Xray-linux-64.zip
+```
+
+## Log rotation
+
+Enable daily rotation with seven archives:
+
+```sh
+sh install-release.sh --logrotate
+```
+
+Alpine enables `crond`; on Gentoo, ensure a cron service is running.
+
+## More Help
+
+```sh
+sh install-release.sh help
 ```
 
 ## Management Commands
+
+For multiple instances, put the configuration files for `xray.a` in `/usr/local/etc/xray/a/`, then run:
+
+```sh
+ln -s xray /etc/init.d/xray.a
+rc-update add xray.a
+rc-service xray.a start
+```
+
+Updates stop and restore only the instances that were running.
 
 #### Enable Xray Service (Auto-start on Boot)
 

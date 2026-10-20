@@ -20,15 +20,14 @@ installed: /usr/local/etc/xray/*.json
 installed: /usr/local/share/xray/geoip.dat
 installed: /usr/local/share/xray/geosite.dat
 
-installed: /var/log/xray/access.log
-installed: /var/log/xray/error.log
+installed: /var/log/xray/
 ```
 
 Notice: Xray will NOT log to `/var/log/xray/*.log` by default. Configure `"log"` to specify log files.
 
 ## Basic Usage
 
-**Install & Upgrade Xray-core and geodata with `User=nobody`, but will NOT overwrite `User` in existing service files**
+**Install & Upgrade Xray-core**
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
@@ -37,7 +36,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 **Update geoip.dat and geosite.dat only**
 
 ```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install-geodata
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ update-geodata
 ```
 
 **Remove Xray, except json and logs**
@@ -46,7 +45,31 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove
 ```
 
+**Check for updates**
+
+```sh
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ check
+```
+
+## Install from a local archive (alternative)
+
+Download the [installation script](install-release.sh) and the [Xray-core zip](https://github.com/XTLS/Xray-core/releases) for your architecture, then run as root (x86_64 example):
+
+```sh
+bash install-release.sh install --local ./Xray-linux-64.zip
+```
+
+Use `--geoip` and `--geosite` independently to supply local data; omitted options use the bundled data.
+
 ## Advance
+
+**Install or upgrade through a proxy**
+
+```sh
+bash -c "$(curl -x http://127.0.0.1:8118 -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --proxy http://127.0.0.1:8118
+```
+
+`--proxy` supports HTTP and SOCKS proxies and also applies to `update-geodata` and `check`.
 
 **Install & Upgrade Xray-core to a pre-release version**
 
@@ -54,7 +77,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --beta
 ```
 
-**Install & Upgrade Xray-core and geodata with `logrotate`, `$time` can be in the format of 12:34:56**
+**Install & Upgrade Xray-core with `logrotate`, `$time` can be in the format of 12:34:56**
 
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --logrotate $time
@@ -65,12 +88,6 @@ installed: /etc/systemd/system/logrotate@.service
 installed: /etc/systemd/system/logrotate@.timer
 
 installed: /etc/logrotate.d/xray
-```
-
-**Install & Upgrade Xray-core and geodata with `User=root`, which will overwrite `User` in existing service files**
-
-```
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u root
 ```
 
 **Install & Upgrade Xray-core without geodata**
@@ -84,6 +101,28 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
 ```
+
+## Other options
+
+`install` also accepts:
+
+| Option                | Description                      |
+| --------------------- | -------------------------------- |
+| `--version <version>` | Install a specified version.     |
+| `--force`             | Force installation.              |
+| `--reinstall`         | Reinstall the current version.   |
+| `--no-update-service` | Keep existing service files.     |
+| `--without-logfiles`  | Skip creating the log directory. |
+
+## Multiple instances
+
+Set `JSONS_PATH` when installing to use configuration directories:
+
+```sh
+JSONS_PATH=/usr/local/etc/xray bash install-release.sh install
+```
+
+`xray.service` reads `JSONS_PATH`; `xray@a.service` reads `JSONS_PATH/a/`. Put each instance's configuration files in its directory, then start it with `systemctl enable --now xray@a`.
 
 ## More Usage
 
