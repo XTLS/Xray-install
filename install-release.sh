@@ -102,6 +102,9 @@ PROXY=''
 # --purge
 PURGE='0'
 
+# --manually-restart-later
+NO_RESTART='0'
+
 # Installation status
 GEODATA='0'
 CONFIG_NEW='0'
@@ -338,6 +341,9 @@ judgment_parameters() {
       LOGROTATE_TIME="$2"
       shift
       ;;
+    '--manually-restart-later')
+      NO_RESTART='1'
+      ;;
     *)
       echo "$0: unknown option -- -"
       return 1
@@ -368,6 +374,14 @@ judgment_parameters() {
       echo 'error: --geoip and --geosite cannot be used with --without-geodata.'
       return 1
     fi
+  fi
+  if [[ "$INSTALL" -eq '1' ]] && ((FORCE + NO_RESTART > 1)); then
+    echo "-f/--force and --manually-restart-later can't be used together."
+    return 1
+  fi
+  if [[ "$INSTALL" -eq '1' ]] && ((REINSTALL + NO_RESTART > 1)); then
+    echo "--reinstall and --manually-restart-later can't be used together."
+    return 1
   fi
 }
 
@@ -952,6 +966,8 @@ show_help() {
   echo "    --without-logfiles        Don't install /var/log/xray"
   echo "    --logrotate [time]        Install with logrotate."
   echo "                              [time] need be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
+  echo "    --manually-restart-later  ${red}[RISKY]${reset} Service won't be restarted during installation."
+  echo "                              ${red}Inconsistency may occur. You must manually restart the service after the installation.${reset}"
   echo '  update-geodata:'
   echo '    -p, --proxy               Download through a proxy server'
   echo '  remove:'
@@ -1039,7 +1055,9 @@ main() {
   # Determine if Xray is running
   if systemctl list-unit-files | grep -w 'xray' >/dev/null; then
     if [[ -n "$(pidof xray)" ]]; then
-      stop_xray
+      if [[ "$NO_RESTART" -eq '0' ]]; then
+        stop_xray
+      fi
       XRAY_RUNNING='1'
     fi
   fi
@@ -1100,8 +1118,15 @@ main() {
   echo "info: Xray $CURRENT_VERSION is installed."
   echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"
   if [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '1' ]] && [[ "$FORCE" -eq '0' ]] && [[ "$REINSTALL" -eq '0' ]]; then
-    if [[ "$XRAY_RUNNING" -eq '1' ]]; then
-      start_xray
+    if [[ "$NO_RESTART" -eq '0' ]]; then
+      if [[ "$XRAY_RUNNING" -eq '1' ]]; then
+        start_xray
+      fi
+    else
+      if [[ "$XRAY_RUNNING" -eq '1' ]]; then
+        echo "${red}Xray has been installed but a service restart is required."
+        echo "${red}To prevent inconsistency, manually restart the service as soon as possible.${reset}"
+      fi
     fi
   else
     systemctl start xray
