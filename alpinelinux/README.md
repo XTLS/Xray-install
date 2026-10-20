@@ -74,7 +74,7 @@ Run as root to download/update geodata only:
 sh install-release.sh update-geodata
 ```
 
-**Xray bundles GeoIP lite; this command downloads GeoIP full and GeoSite.** Data comes from [XTLS/Xray-rules-dat](https://github.com/XTLS/Xray-rules-dat).
+**Xray bundles GeoIP lite and GeoSite standard; this command downloads GeoIP full and GeoSite expanded.** Data comes from [XTLS/Xray-rules-dat](https://github.com/XTLS/Xray-rules-dat).
 
 ## More Help
 

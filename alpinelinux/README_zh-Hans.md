@@ -74,7 +74,7 @@ Alpine 会启用 `crond`；Gentoo 需确保 cron 服务正在运行。
 sh install-release.sh update-geodata
 ```
 
-**Xray 自带的是 GeoIP lite，此命令下载 GeoIP full 和 GeoSite。** 数据来自 [XTLS/Xray-rules-dat](https://github.com/XTLS/Xray-rules-dat)。
+**Xray 自带的是 GeoIP lite 和 GeoSite standard，此命令下载 GeoIP full 和 GeoSite expanded。** 数据来自 [XTLS/Xray-rules-dat](https://github.com/XTLS/Xray-rules-dat)。
 
 ## 更多帮助
 

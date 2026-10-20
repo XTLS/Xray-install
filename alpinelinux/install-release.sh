@@ -106,7 +106,7 @@ judgment_parameters() {
 show_help() {
     echo "usage: $0 [install | update-geodata | help] [OPTION]..."
     echo 'With no action, install/update Xray from GitHub.'
-    echo '  update-geodata     Download/update GeoIP full and GeoSite only'
+    echo '  update-geodata     Download/update GeoIP full and GeoSite expanded only'
     echo '                     Xray bundles GeoIP lite; see https://github.com/XTLS/Xray-rules-dat'
     echo '  -l, --local <zip>  Install a local Xray zip without accessing GitHub'
     echo '                     Relative paths use the current working directory; quote paths containing spaces'
@@ -382,7 +382,8 @@ decompression() {
 download_geodata() {
     local file download_link
     echo 'info: Xray bundles GeoIP lite as geoip.dat; replacing it with GeoIP full.'
-    for file in geoip-full.dat geosite.dat; do
+    echo 'info: Xray bundles GeoSite standard as geosite.dat; replacing it with GeoSite expanded.'
+    for file in geoip-full.dat geosite-expand.dat; do
         download_link="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/$file"
         echo "Downloading $file..."
         if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}$file" "$download_link" -# ||
@@ -397,6 +398,7 @@ download_geodata() {
         fi
     done
     mv "${TMP_DIRECTORY}geoip-full.dat" "${TMP_DIRECTORY}geoip.dat"
+    mv "${TMP_DIRECTORY}geosite-expand.dat" "${TMP_DIRECTORY}geosite.dat"
 }
 
 update_geodata() {
@@ -408,7 +410,7 @@ update_geodata() {
         manage_xray_services start
     fi
     echo 'installed: /usr/local/share/xray/geoip.dat (GeoIP full)'
-    echo 'installed: /usr/local/share/xray/geosite.dat'
+    echo 'installed: /usr/local/share/xray/geosite.dat (GeoSite expanded)'
     echo 'info: Geodata is updated.'
 }
 
