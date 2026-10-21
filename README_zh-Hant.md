@@ -40,6 +40,8 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ update-geodata
 ```
 
+**Xray 內附的是 GeoIP lite 和 GeoSite standard，此指令下載 GeoIP full 和 GeoSite expanded。** 資料來自 [XTLS/Xray-rules-dat](https://github.com/XTLS/Xray-rules-dat)。
+
 **移除 Xray，但保留 json 設定檔案和日誌**
 
 ```

@@ -844,17 +844,16 @@ update_geodata() {
       exit 1
     fi
   }
-  local download_link_geoip="https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"
-  local download_link_geosite="https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
+  local download_link_geoip="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geoip-full.dat"
+  local download_link_geosite="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geosite-expand.dat"
   local file_ip='geoip.dat'
-  local file_dlc='geosite.dat'
   local file_site='geosite.dat'
   local dir_tmp
   dir_tmp="$(mktemp -d)"
   TMP_PATHS+=("$dir_tmp")
   [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '0' ]] && echo "warning: Xray was not installed"
   download_geodata $download_link_geoip $file_ip
-  download_geodata $download_link_geosite $file_dlc
+  download_geodata $download_link_geosite $file_site
   cd "${dir_tmp}" || exit
   for i in "${dir_tmp}"/*.sha256sum; do
     if ! sha256sum -c "${i}"; then
@@ -864,7 +863,7 @@ update_geodata() {
   done
   cd - >/dev/null || exit 1
   install_geodata_dir
-  install -m 644 -o xray -g xray "${dir_tmp}"/${file_dlc} "${DAT_PATH}"/${file_site}
+  install -m 644 -o xray -g xray "${dir_tmp}"/${file_site} "${DAT_PATH}"/${file_site}
   install -m 644 -o xray -g xray "${dir_tmp}"/${file_ip} "${DAT_PATH}"/${file_ip}
   rm -r "${dir_tmp}"
   exit 0
@@ -941,7 +940,8 @@ show_help() {
   echo
   echo 'ACTION:'
   echo '  install                   Install/Update Xray'
-  echo '  update-geodata            Update geoip.dat and geosite.dat only'
+  echo '  update-geodata            Download/update GeoIP full and GeoSite expanded only'
+  echo '                            Xray bundles GeoIP lite; see https://github.com/XTLS/Xray-rules-dat'
   echo '  remove                    Remove Xray'
   echo '  help                      Show help'
   echo '  check                     Check if Xray can be updated'
