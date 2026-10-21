@@ -107,7 +107,7 @@ show_help() {
     echo "usage: $0 [install | update-geodata | help] [OPTION]..."
     echo 'With no action, install/update Xray from GitHub.'
     echo '  update-geodata     Download/update GeoIP full and GeoSite expanded only'
-    echo '                     Xray bundles GeoIP lite; see https://github.com/XTLS/Xray-rules-dat'
+    echo '                     Xray bundles GeoIP lite and GeoSite standard; see https://github.com/XTLS/Xray-rules-dat'
     echo '  -l, --local <zip>  Install a local Xray zip without accessing GitHub'
     echo '                     Relative paths use the current working directory; quote paths containing spaces'
     echo '                     Verify <zip>.dgst if present; warn and continue if absent'
