@@ -5,7 +5,10 @@ set -euo pipefail
 
 LOCAL_FILE=''
 PROXY=''
+LOCAL_GEOIP=''
+LOCAL_GEOSITE=''
 HELP='0'
+UPDATE_GEODATA='0'
 LOGROTATE='0'
 BETA='0'
 
@@ -13,7 +16,7 @@ judgment_parameters() {
     local action=''
     while [ "$#" -gt 0 ]; do
         case "$1" in
-        install | help)
+        install | update-geodata | help)
             if [ -n "$action" ] && [ "$action" != "$1" ]; then
                 echo 'error: You can only choose one action.'
                 return 1
@@ -40,6 +43,20 @@ judgment_parameters() {
             PROXY="$2"
             shift
             ;;
+        --geoip | --geosite)
+            case "${2:-}" in
+            '' | -*)
+                echo "error: Please specify a local geodata file after $1."
+                return 1
+                ;;
+            esac
+            if [ "$1" = --geoip ]; then
+                LOCAL_GEOIP="$2"
+            else
+                LOCAL_GEOSITE="$2"
+            fi
+            shift
+            ;;
         --logrotate)
             LOGROTATE='1'
             ;;
@@ -53,7 +70,7 @@ judgment_parameters() {
         esac
         shift
     done
-    if [ "$action" = help ]; then
+    if [ "$action" = help ] || [ "$action" = update-geodata ]; then
         if [ -n "$LOCAL_FILE" ]; then
             echo 'error: --local can only be used with install.'
             return 1
@@ -66,26 +83,38 @@ judgment_parameters() {
             echo 'error: --beta can only be used with install.'
             return 1
         fi
-        if [ -n "$PROXY" ]; then
-            echo 'error: --proxy can only be used with install.'
-            return 1
+        if [ "$action" = help ]; then
+            if [ -n "$PROXY" ]; then
+                echo 'error: --proxy can only be used with install or update-geodata.'
+                return 1
+            fi
+            HELP='1'
+        else
+            UPDATE_GEODATA='1'
         fi
-        HELP='1'
     fi
     if [ -n "$LOCAL_FILE" ] && [ "$BETA" -eq '1' ]; then
         echo 'error: --beta and --local cannot be used together.'
         return 1
     fi
+    if { [ -n "$LOCAL_GEOIP" ] || [ -n "$LOCAL_GEOSITE" ]; } && [ -z "$LOCAL_FILE" ]; then
+        echo 'error: --geoip and --geosite can only be used with --local.'
+        return 1
+    fi
 }
 
 show_help() {
-    echo "usage: $0 [install | help] [OPTION]..."
+    echo "usage: $0 [install | update-geodata | help] [OPTION]..."
     echo 'With no action, install/update Xray from GitHub.'
+    echo '  update-geodata     Download/update GeoIP full and GeoSite expanded only'
+    echo '                     Xray bundles GeoIP lite; see https://github.com/XTLS/Xray-rules-dat'
     echo '  -l, --local <zip>  Install a local Xray zip without accessing GitHub'
     echo '                     Relative paths use the current working directory; quote paths containing spaces'
     echo '                     Verify <zip>.dgst if present; warn and continue if absent'
     echo '                     Missing tools may be installed from system package repositories'
-    echo '                     The archive must contain xray, geoip.dat and geosite.dat'
+    echo '                     Uses bundled geodata unless --geoip or --geosite is specified'
+    echo '      --geoip <file>  Use a local GeoIP file with --local'
+    echo '      --geosite <file> Use a local GeoSite file with --local'
     echo '      --proxy <URL>  Download through an HTTP or SOCKS proxy'
     echo '      --logrotate    Enable daily log rotation, keeping seven archives'
     echo '      --beta         Install the latest available release, including pre-releases'
@@ -139,6 +168,33 @@ check_local_xray_version() {
         echo 'error: Local xray binary cannot run. Please check its architecture and format.'
         return 1
     fi
+}
+
+check_local_geodata() {
+    local file
+    for file in "$LOCAL_GEOIP" "$LOCAL_GEOSITE"; do
+        [ -n "$file" ] || continue
+        if [ ! -f "$file" ] || [ ! -r "$file" ] || [ ! -s "$file" ]; then
+            echo "error: Local geodata must be a readable, non-empty file: $file"
+            return 1
+        fi
+    done
+}
+
+prepare_local_geodata() {
+    local file
+    if [ -n "$LOCAL_GEOIP" ]; then
+        cp "$LOCAL_GEOIP" "${TMP_DIRECTORY}geoip.dat"
+    fi
+    if [ -n "$LOCAL_GEOSITE" ]; then
+        cp "$LOCAL_GEOSITE" "${TMP_DIRECTORY}geosite.dat"
+    fi
+    for file in geoip.dat geosite.dat; do
+        if [ ! -f "${TMP_DIRECTORY}$file" ] || [ ! -r "${TMP_DIRECTORY}$file" ] || [ ! -s "${TMP_DIRECTORY}$file" ]; then
+            echo "error: Missing, empty or unreadable geodata: $file"
+            return 1
+        fi
+    done
 }
 
 pkg_manager() {
@@ -323,6 +379,41 @@ decompression() {
     fi
 }
 
+download_geodata() {
+    local file download_link
+    echo 'info: Xray bundles GeoIP lite as geoip.dat; replacing it with GeoIP full.'
+    echo 'info: Xray bundles GeoSite standard as geosite.dat; replacing it with GeoSite expanded.'
+    for file in geoip-full.dat geosite-expand.dat; do
+        download_link="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/$file"
+        echo "Downloading $file..."
+        if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}$file" "$download_link" -# ||
+            ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}$file.sha256sum" "$download_link.sha256sum" -#; then
+            echo "error: Failed to download $file or its SHA256 checksum. Please check your network or try again."
+            return 1
+        fi
+        if [ ! -s "${TMP_DIRECTORY}$file" ] ||
+            ! (cd "$TMP_DIRECTORY" && sha256sum -c "$file.sha256sum"); then
+            echo "error: SHA256 verification failed for $file."
+            return 1
+        fi
+    done
+    mv "${TMP_DIRECTORY}geoip-full.dat" "${TMP_DIRECTORY}geoip.dat"
+    mv "${TMP_DIRECTORY}geosite-expand.dat" "${TMP_DIRECTORY}geosite.dat"
+}
+
+update_geodata() {
+    download_geodata
+    create_xray_user
+    is_it_running
+    install_geodata_files
+    if [ -n "$XRAY_RUNNING" ]; then
+        manage_xray_services start
+    fi
+    echo 'installed: /usr/local/share/xray/geoip.dat (GeoIP full)'
+    echo 'installed: /usr/local/share/xray/geosite.dat (GeoSite expanded)'
+    echo 'info: Geodata is updated.'
+}
+
 is_it_running() {
     local service
     XRAY_RUNNING="$(
@@ -369,6 +460,10 @@ create_xray_user() {
 
 install_xray() {
     install -m 755 -o 0 -g 0 "${TMP_DIRECTORY}xray" "/usr/local/bin/xray"
+    install_geodata_files
+}
+
+install_geodata_files() {
     install -d -m 755 -o xray -g xray /usr/local/share/xray/
     install -m 644 -o xray -g xray "${TMP_DIRECTORY}geoip.dat" "/usr/local/share/xray/geoip.dat"
     install -m 644 -o xray -g xray "${TMP_DIRECTORY}geosite.dat" "/usr/local/share/xray/geosite.dat"
@@ -377,9 +472,9 @@ install_xray() {
 install_confdir() {
     CONFDIR='0'
     if [ ! -d '/usr/local/etc/xray/' ]; then
-        install -d /usr/local/etc/xray/
+        install -d -m 750 -o 0 -g xray /usr/local/etc/xray/
         for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_stats 08_fakedns 09_metrics 10_observatory 11_geodata 12_env 99_version; do
-            install -m 644 -o 0 -g 0 /dev/null "/usr/local/etc/xray/$BASE.json"
+            install -m 640 -o 0 -g xray /dev/null "/usr/local/etc/xray/$BASE.json"
             echo '{}' >"/usr/local/etc/xray/$BASE.json"
         done
         CONFDIR='1'
@@ -522,20 +617,22 @@ main() {
     fi
     check_distro
     check_if_running_as_root
+    TMP_DIRECTORY="$(mktemp -d)"
+    trap '"rm" -rf -- "$TMP_DIRECTORY" || :' EXIT
+    TMP_DIRECTORY="${TMP_DIRECTORY}/"
+    if [ "$UPDATE_GEODATA" -eq '1' ]; then
+        install_dependencies curl
+        update_geodata
+        return 0
+    fi
     identify_architecture
     if [ -n "$LOCAL_FILE" ]; then
         verify_local_archive
+        check_local_geodata
         install_dependencies unzip
     else
         install_dependencies curl unzip
     fi
-    if [ "$LOGROTATE" -eq '1' ]; then
-        install_with_logrotate
-    fi
-
-    TMP_DIRECTORY="$(mktemp -d)"
-    trap '"rm" -rf -- "$TMP_DIRECTORY" || :' EXIT
-    TMP_DIRECTORY="${TMP_DIRECTORY}/"
     ZIP_FILE="${TMP_DIRECTORY}Xray-linux-$MACHINE.zip"
     DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$MACHINE.zip"
 
@@ -551,6 +648,10 @@ main() {
     decompression
     if [ -n "$LOCAL_FILE" ]; then
         check_local_xray_version
+        prepare_local_geodata
+    fi
+    if [ "$LOGROTATE" -eq '1' ]; then
+        install_with_logrotate
     fi
     create_xray_user
     is_it_running
