@@ -845,7 +845,7 @@ update_geodata() {
     fi
   }
   local download_link_geoip="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geoip-full.dat"
-  local download_link_geosite="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geosite.dat"
+  local download_link_geosite="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geosite-expand.dat"
   local file_ip='geoip.dat'
   local file_site='geosite.dat'
   local dir_tmp
@@ -940,7 +940,8 @@ show_help() {
   echo
   echo 'ACTION:'
   echo '  install                   Install/Update Xray'
-  echo '  update-geodata            Update geoip.dat and geosite.dat only'
+  echo '  update-geodata            Download/update GeoIP full and GeoSite expanded only'
+  echo '                            Xray bundles GeoIP lite; see https://github.com/XTLS/Xray-rules-dat'
   echo '  remove                    Remove Xray'
   echo '  help                      Show help'
   echo '  check                     Check if Xray can be updated'
