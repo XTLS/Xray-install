@@ -2,6 +2,37 @@
 
 [English](README.md) | 简体中文 | [繁體中文](README_zh-Hant.md)
 
+> [!WARNING]
+>
+> **自 2026-10-18 起的不兼容变更**
+>
+> **全新安装可忽略此内容，从旧版升级必须照做否则可能无法启动 xray 或降低安全性**
+>
+> 1. **Geodata**：为了解决一些已知问题，数据来源已从 Loyalsoldier/v2ray-rules-dat 切换至 [XTLS/Xray-rules-dat](https://github.com/XTLS/Xray-rules-dat)，不保证与旧数据完全兼容。若您需要 GeoIP `cn` `ru` `ir` 以外的国家分类，请执行 `update-geodata`（由 `install-geodata` 改名而来）。若您需要 Loyalsoldier 的一些特殊 GeoSite 分类（如 `gfw`、`win-spy`），请手动下载 [Loyalsoldier 版 geosite.dat](https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat)，在资源目录中另存为 `geosite-loyalsoldier.dat`，并在 xray 配置中通过 `ext:geosite-loyalsoldier.dat:分类名` 使用。
+> 2. **日志轮转**：请使用本安装脚本提供的 `--logrotate`，不要再额外配置其他轮转任务，以免发生权限或日志写入问题。
+> 3. **文件权限**：鉴于近期其他软件及系统组件的 0day 频发，为降低其对 Xray 服务的潜在影响，现加强服务隔离与文件权限控制：由共用的 `nobody` 账号改为专用的 `xray` 用户，不再支持自定义运行用户，并收紧配置和日志目录权限。您的自定义配置文件、证书及旧安装需要检查访问权限。
+>
+>    <details>
+>    <summary>展开查看默认权限及自定义配置、证书的设置要求</summary>
+>
+>    下表是当前安装脚本自动设置的安全默认权限：程序和配置由 root 管理，`xray` 账户只能读取配置；geodata 和日志允许服务写入。主旨是保护日志和配置文件，这符合最佳安全实践。
+>
+>    | 用途         | 路径                                | 所有者:组   | 权限   |
+>    | ------------ | ----------------------------------- | ----------- | ------ |
+>    | Xray 二进制  | `/usr/local/bin/xray`               | `root:root` | `0755` |
+>    | 配置目录     | `/usr/local/etc/xray/`              | `root:xray` | `0750` |
+>    | 配置文件     | `/usr/local/etc/xray/*.json`        | `root:xray` | `0640` |
+>    | Geodata 目录 | `/usr/local/share/xray/`            | `xray:xray` | `0755` |
+>    | GeoIP 数据   | `/usr/local/share/xray/geoip.dat`   | `xray:xray` | `0644` |
+>    | GeoSite 数据 | `/usr/local/share/xray/geosite.dat` | `xray:xray` | `0644` |
+>    | 日志目录     | `/var/log/xray/`                    | `xray:xray` | `0700` |
+>
+>    **旧安装的目录和文件权限无法自动迁移，您应按上表手动调整。也可先备份配置与数据，完全卸载旧版并删除所有相关目录和文件后，重新安装。**
+>
+>    **自定义配置与证书（如有）**：您的自定义配置目录、新增配置文件，以及证书目录、证书和私钥，也应采用上表中“配置目录”和“配置文件”的权限规则。
+>
+>    </details>
+
 ## 安装 Xray
 
 #### 安装 cURL
