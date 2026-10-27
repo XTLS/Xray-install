@@ -251,19 +251,22 @@ identify_architecture() {
     'amd64' | 'x86_64')
         MACHINE='64'
         ;;
-    'armv5tel')
+    'armv5tel' | 'armv5tejl')
         MACHINE='arm32-v5'
         ;;
     'armv6l')
         MACHINE='arm32-v6'
         grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
         ;;
-    'armv7' | 'armv7l')
+    'armv7' | 'armv7l' | 'armv8l')
         MACHINE='arm32-v7a'
         grep Features /proc/cpuinfo | grep -qw 'vfp' || MACHINE='arm32-v5'
         ;;
     'armv8' | 'aarch64')
         MACHINE='arm64-v8a'
+        ;;
+    'loongarch64')
+        MACHINE='loong64'
         ;;
     'mips')
         MACHINE='mips32'
