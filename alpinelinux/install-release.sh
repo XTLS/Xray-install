@@ -11,6 +11,7 @@ HELP='0'
 UPDATE_GEODATA='0'
 LOGROTATE='0'
 BETA='0'
+NO_RESTART='0'
 
 judgment_parameters() {
     local action=''
@@ -63,6 +64,9 @@ judgment_parameters() {
         --beta)
             BETA='1'
             ;;
+        --manually-restart-later)
+            NO_RESTART='1'
+            ;;
         *)
             echo "error: Unknown option: $1"
             return 1
@@ -81,6 +85,10 @@ judgment_parameters() {
         fi
         if [ "$BETA" -eq '1' ]; then
             echo 'error: --beta can only be used with install.'
+            return 1
+        fi
+        if [ "$NO_RESTART" -eq '1' ]; then
+            echo 'error: --manually-restart-later can only be used with install.'
             return 1
         fi
         if [ "$action" = help ]; then
@@ -118,6 +126,7 @@ show_help() {
     echo '      --proxy <URL>  Download through an HTTP or SOCKS proxy'
     echo '      --logrotate    Enable daily log rotation, keeping seven archives'
     echo '      --beta         Install the latest available release, including pre-releases'
+    echo '      --manually-restart-later Update Xray without stopping or restarting it; restart manually afterward'
 }
 
 verify_local_archive() {
@@ -443,6 +452,12 @@ is_it_running() {
 
 manage_xray_services() {
     local action="$1" service
+    if [ "$NO_RESTART" -eq '1' ]; then
+        if [ "$action" = start ]; then
+            echo 'info: Restart the running Xray instances manually to apply the update.'
+        fi
+        return 0
+    fi
     printf '%s\n' "$XRAY_RUNNING" | while IFS= read -r service; do
         rc-service "$service" "$action"
     done
