@@ -836,6 +836,8 @@ EOF
 }
 
 update_geodata() {
+  install_software 'curl' 'curl'
+  install_software 'gzip' 'gzip'
   create_xray_user
   download_geodata() {
     if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}" "${1}"; then
@@ -847,8 +849,8 @@ update_geodata() {
       exit 1
     fi
   }
-  local file_ip='geoip-full.dat'
-  local file_site='geosite-expand.dat'
+  local file_ip='geoip-full.dat.gz'
+  local file_site='geosite-expand.dat.gz'
   local download_link_geoip="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/${file_ip}"
   local download_link_geosite="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/${file_site}"
   local dir_tmp
@@ -865,9 +867,13 @@ update_geodata() {
     fi
   done
   cd - >/dev/null || exit 1
+  if ! gzip -d "${dir_tmp}/${file_ip}" "${dir_tmp}/${file_site}"; then
+    echo 'error: Geodata decompression failed.'
+    exit 1
+  fi
   install_geodata_dir
-  install -m 644 -o xray -g xray "${dir_tmp}/${file_site}" "${DAT_PATH}/geosite.dat"
-  install -m 644 -o xray -g xray "${dir_tmp}/${file_ip}" "${DAT_PATH}/geoip.dat"
+  install -m 644 -o xray -g xray "${dir_tmp}/${file_site%.gz}" "${DAT_PATH}/geosite.dat"
+  install -m 644 -o xray -g xray "${dir_tmp}/${file_ip%.gz}" "${DAT_PATH}/geoip.dat"
   rm -r "${dir_tmp}"
   exit 0
 }

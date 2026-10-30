@@ -386,7 +386,7 @@ download_geodata() {
     local file download_link
     echo 'info: Xray bundles GeoIP lite as geoip.dat; replacing it with GeoIP full.'
     echo 'info: Xray bundles GeoSite standard as geosite.dat; replacing it with GeoSite expanded.'
-    for file in geoip-full.dat geosite-expand.dat; do
+    for file in geoip-full.dat.gz geosite-expand.dat.gz; do
         download_link="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/$file"
         echo "Downloading $file..."
         if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}$file" "$download_link" -# ||
@@ -397,6 +397,10 @@ download_geodata() {
         if [ ! -s "${TMP_DIRECTORY}$file" ] ||
             ! (cd "$TMP_DIRECTORY" && sha256sum -c "$file.sha256sum"); then
             echo "error: SHA256 verification failed for $file."
+            return 1
+        fi
+        if ! gzip -d "${TMP_DIRECTORY}$file"; then
+            echo "error: Geodata decompression failed for $file."
             return 1
         fi
     done
@@ -624,7 +628,7 @@ main() {
     trap '"rm" -rf -- "$TMP_DIRECTORY" || :' EXIT
     TMP_DIRECTORY="${TMP_DIRECTORY}/"
     if [ "$UPDATE_GEODATA" -eq '1' ]; then
-        install_dependencies curl
+        install_dependencies curl gzip
         update_geodata
         return 0
     fi
