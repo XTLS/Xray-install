@@ -61,6 +61,14 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 sh install-release.sh
 ```
 
+**如果当前 SSH 连接通过 Xray 建立，更新 Xray 时务必使用 `--manually-restart-later`，避免服务重启导致 SSH 连接中断。**
+
+```sh
+sh install-release.sh --manually-restart-later
+```
+
+此选项保留当前实例运行，更新后需手动重启以应用更改。
+
 ## 代理
 
 ```sh

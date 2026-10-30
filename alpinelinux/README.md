@@ -61,6 +61,14 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 sh install-release.sh
 ```
 
+**If your current SSH connection goes through Xray, you must use `--manually-restart-later` when updating Xray to prevent a service restart from disconnecting SSH.**
+
+```sh
+sh install-release.sh --manually-restart-later
+```
+
+This option keeps the current instances running. Restart manually afterward to apply the changes.
+
 ## Proxy
 
 ```sh

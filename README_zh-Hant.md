@@ -61,6 +61,8 @@
 
 **安裝並升級 Xray-core**
 
+**如果目前的 SSH 連線透過 Xray 建立，更新 Xray 時務必使用 `--manually-restart-later`，避免服務重啟導致 SSH 連線中斷。**
+
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 ```
