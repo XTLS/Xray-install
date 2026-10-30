@@ -969,7 +969,7 @@ show_help() {
   echo "    --without-logfiles        Don't install /var/log/xray"
   echo "    --logrotate [time]        Install with logrotate."
   echo "                              [time] need be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
-  echo "    --manually-restart-later  ${red}[RISKY]${reset} Service won't be restarted during installation."
+  echo "    --manually-restart-later  ${red}[RISKY]${reset} Service won't restart during installation. May not work on every systems."
   echo "                              ${red}Inconsistency may occur. You must manually restart the service after the installation.${reset}"
   echo '  update-geodata:'
   echo '    -p, --proxy               Download through a proxy server'

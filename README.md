@@ -139,13 +139,14 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 `install` also accepts:
 
-| Option                | Description                      |
-| --------------------- | -------------------------------- |
-| `--version <version>` | Install a specified version.     |
-| `--force`             | Force installation.              |
-| `--reinstall`         | Reinstall the current version.   |
-| `--no-update-service` | Keep existing service files.     |
-| `--without-logfiles`  | Skip creating the log directory. |
+| Option                     | Description                                                    |
+| -------------------------- | -------------------------------------------------------------- |
+| `--version <version>`      | Install a specified version.                                   |
+| `--force`                  | Force installation.                                            |
+| `--reinstall`              | Reinstall the current version.                                 |
+| `--no-update-service`      | Keep existing service files.                                   |
+| `--without-logfiles`       | Skip creating the log directory.                               |
+| `--manually-restart-later` | Do not restart service during installation. (Use with caution) |
 
 ## Multiple instances
 
