@@ -835,10 +835,17 @@ EOF
   LOGROTATE_FIN='1'
 }
 
+check_geodata_requirements() {
+  if ! id -u xray >/dev/null 2>&1 || ! grep -q '^xray:' /etc/group; then
+    echo 'error: Updating geodata requires the xray user and group to exist.'
+    return 1
+  fi
+}
+
 update_geodata() {
+  check_geodata_requirements
   install_software 'curl' 'curl'
   install_software 'gzip' 'gzip'
-  create_xray_user
   download_geodata() {
     if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}" "${1}"; then
       echo 'error: Download failed! Please check your network or try again.'
@@ -856,7 +863,6 @@ update_geodata() {
   local dir_tmp
   dir_tmp="$(mktemp -d)"
   TMP_PATHS+=("$dir_tmp")
-  [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '0' ]] && echo "warning: Xray was not installed"
   download_geodata "$download_link_geoip" "$file_ip"
   download_geodata "$download_link_geosite" "$file_site"
   cd "${dir_tmp}" || exit
@@ -949,7 +955,7 @@ show_help() {
   echo
   echo 'ACTION:'
   echo '  install                   Install/Update Xray'
-  echo '  update-geodata            Download/update GeoIP full and GeoSite expanded only'
+  echo '  update-geodata            Update GeoIP full and GeoSite expanded once'
   echo '                            Xray bundles GeoIP lite and GeoSite standard; see https://github.com/XTLS/Xray-rules-dat'
   echo '  remove                    Remove Xray'
   echo '  help                      Show help'

@@ -106,7 +106,7 @@ judgment_parameters() {
 show_help() {
     echo "usage: $0 [install | update-geodata | help] [OPTION]..."
     echo 'With no action, install/update Xray from GitHub.'
-    echo '  update-geodata     Download/update GeoIP full and GeoSite expanded only'
+    echo '  update-geodata     Update GeoIP full and GeoSite expanded once'
     echo '                     Xray bundles GeoIP lite and GeoSite standard; see https://github.com/XTLS/Xray-rules-dat'
     echo '  -l, --local <zip>  Install a local Xray zip without accessing GitHub'
     echo '                     Relative paths use the current working directory; quote paths containing spaces'
@@ -409,16 +409,20 @@ download_geodata() {
 }
 
 update_geodata() {
+    check_geodata_requirements
+    install_dependencies curl gzip
     download_geodata
-    create_xray_user
-    is_it_running
     install_geodata_files
-    if [ -n "$XRAY_RUNNING" ]; then
-        manage_xray_services start
-    fi
     echo 'installed: /usr/local/share/xray/geoip.dat (GeoIP full)'
     echo 'installed: /usr/local/share/xray/geosite.dat (GeoSite expanded)'
     echo 'info: Geodata is updated.'
+}
+
+check_geodata_requirements() {
+    if ! id -u xray >/dev/null 2>&1 || ! grep -q '^xray:' /etc/group; then
+        echo 'error: Updating geodata requires the xray user and group to exist.'
+        return 1
+    fi
 }
 
 is_it_running() {
@@ -628,7 +632,6 @@ main() {
     trap '"rm" -rf -- "$TMP_DIRECTORY" || :' EXIT
     TMP_DIRECTORY="${TMP_DIRECTORY}/"
     if [ "$UPDATE_GEODATA" -eq '1' ]; then
-        install_dependencies curl gzip
         update_geodata
         return 0
     fi
