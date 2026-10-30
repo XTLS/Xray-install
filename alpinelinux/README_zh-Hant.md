@@ -69,7 +69,9 @@ sh install-release.sh --manually-restart-later
 
 此選項保留目前實例執行，更新後需手動重啟以套用變更。
 
-## 代理
+## 透過代理安裝或升級
+
+需要使用代理時，可透過 `--proxy` 指定代理位址：
 
 ```sh
 sh install-release.sh --proxy http://127.0.0.1:8118
@@ -123,16 +125,6 @@ sh install-release.sh help
 
 ## 管理指令
 
-使用多實例時，將 `xray.a` 的設定檔放入 `/usr/local/etc/xray/a/`，然後執行：
-
-```sh
-ln -s xray /etc/init.d/xray.a
-rc-update add xray.a
-rc-service xray.a start
-```
-
-升級僅停止並恢復原先執行中的實例。
-
 #### 啟用 Xray 服務 (開機自啟)
 
 ```sh
@@ -162,3 +154,15 @@ rc-service xray stop
 ```sh
 rc-service xray restart
 ```
+
+## 多實例（選用）
+
+如需同時執行多個 Xray 實例，可為每個實例使用獨立的設定目錄。以 `xray.a` 為例，將設定檔放入 `/usr/local/etc/xray/a/`，然後執行：
+
+```sh
+ln -s xray /etc/init.d/xray.a
+rc-update add xray.a
+rc-service xray.a start
+```
+
+升級 Xray 時，僅停止並恢復原先執行中的實例。
