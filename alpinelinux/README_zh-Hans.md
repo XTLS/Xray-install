@@ -61,7 +61,17 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 sh install-release.sh
 ```
 
-## 代理
+**如果当前 SSH 连接通过 Xray 建立，更新 Xray 时务必使用 `--manually-restart-later`，避免服务重启导致 SSH 连接中断。**
+
+```sh
+sh install-release.sh --manually-restart-later
+```
+
+此选项保留当前实例运行，更新后需手动重启以应用更改。
+
+## 通过代理安装或升级
+
+需要使用代理时，可通过 `--proxy` 指定代理地址：
 
 ```sh
 sh install-release.sh --proxy http://127.0.0.1:8118
@@ -115,16 +125,6 @@ sh install-release.sh help
 
 ## 管理命令
 
-使用多实例时，将 `xray.a` 的配置文件放入 `/usr/local/etc/xray/a/`，然后执行：
-
-```sh
-ln -s xray /etc/init.d/xray.a
-rc-update add xray.a
-rc-service xray.a start
-```
-
-升级仅停止并恢复原先运行的实例。
-
 #### 启用 Xray 服务 (开机自启)
 
 ```sh
@@ -154,3 +154,15 @@ rc-service xray stop
 ```sh
 rc-service xray restart
 ```
+
+## 多实例（可选）
+
+如需同时运行多个 Xray 实例，可为每个实例使用独立的配置目录。以 `xray.a` 为例，将配置文件放入 `/usr/local/etc/xray/a/`，然后执行：
+
+```sh
+ln -s xray /etc/init.d/xray.a
+rc-update add xray.a
+rc-service xray.a start
+```
+
+升级 Xray 时，仅停止并恢复原先运行的实例。

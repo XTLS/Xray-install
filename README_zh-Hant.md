@@ -61,6 +61,8 @@
 
 **安裝並升級 Xray-core**
 
+**如果目前的 SSH 連線透過 Xray 建立，更新 Xray 時務必使用 `--manually-restart-later`，避免服務重啟導致 SSH 連線中斷。**
+
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 ```
@@ -140,14 +142,14 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 `install` 還支援以下參數：
 
-| 參數                       | 說明                                     |
-| -------------------------- | ---------------------------------------- |
-| `--version <version>`      | 安裝指定版本。                           |
-| `--force`                  | 強制安裝。                               |
-| `--reinstall`              | 重新安裝目前版本。                       |
-| `--no-update-service`      | 保留既有服務檔案。                       |
-| `--without-logfiles`       | 不建立日誌目錄。                         |
-| `--manually-restart-later` | 安裝期間不重新啟動服務。（使用時須謹慎） |
+| 參數                       | 說明                     |
+| -------------------------- | ------------------------ |
+| `--version <version>`      | 安裝指定版本。           |
+| `--force`                  | 強制安裝。               |
+| `--reinstall`              | 重新安裝目前版本。       |
+| `--no-update-service`      | 保留既有服務檔案。       |
+| `--without-logfiles`       | 不建立日誌目錄。         |
+| `--manually-restart-later` | 安裝期間不重新啟動服務。 |
 
 ## 多實例
 

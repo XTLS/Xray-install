@@ -30,6 +30,11 @@ JSONS_PATH=${JSONS_PATH:-}
 # export check_all_service_files='yes'
 check_all_service_files=${check_all_service_files:-}
 
+red=$'\033[31m'
+green=$'\033[32m'
+aoi=$'\033[36m'
+reset=$'\033[0m'
+
 # Gobal verbals
 
 if [[ -f '/etc/systemd/system/xray.service' ]] && [[ -f '/usr/local/bin/xray' ]]; then
@@ -228,27 +233,21 @@ identify_the_operating_system_and_architecture() {
   if [[ "$(type -P apt)" ]]; then
     PACKAGE_MANAGEMENT_INSTALL='apt -y --no-install-recommends install'
     PACKAGE_MANAGEMENT_REMOVE='apt purge'
-    package_provide_tput='ncurses-bin'
   elif [[ "$(type -P dnf)" ]]; then
     PACKAGE_MANAGEMENT_INSTALL='dnf -y install'
     PACKAGE_MANAGEMENT_REMOVE='dnf remove'
-    package_provide_tput='ncurses'
   elif [[ "$(type -P yum)" ]]; then
     PACKAGE_MANAGEMENT_INSTALL='yum -y install'
     PACKAGE_MANAGEMENT_REMOVE='yum remove'
-    package_provide_tput='ncurses'
   elif [[ "$(type -P zypper)" ]]; then
     PACKAGE_MANAGEMENT_INSTALL='zypper install -y --no-recommends'
     PACKAGE_MANAGEMENT_REMOVE='zypper remove'
-    package_provide_tput='ncurses-utils'
   elif [[ "$(type -P pacman)" ]]; then
     PACKAGE_MANAGEMENT_INSTALL='pacman -Syy --noconfirm'
     PACKAGE_MANAGEMENT_REMOVE='pacman -Rsn'
-    package_provide_tput='ncurses'
   elif [[ "$(type -P emerge)" ]]; then
     PACKAGE_MANAGEMENT_INSTALL='emerge -qv'
     PACKAGE_MANAGEMENT_REMOVE='emerge -Cv'
-    package_provide_tput='ncurses'
   else
     echo "error: The script does not support the package manager in this operating system."
     return 1
@@ -595,7 +594,7 @@ decompression() {
 
 create_xray_user() {
   if id -u xray >/dev/null 2>&1; then
-    printf '%s\n' \
+    printf '\033[1;31m%s\033[0m\n' \
       "WARNING: The 'xray' user already exists and will be reused to run Xray." \
       'WARNING: Ensure this account is dedicated to Xray; it will own Xray logs and geodata.' >&2
   fi
@@ -835,8 +834,17 @@ EOF
   LOGROTATE_FIN='1'
 }
 
+check_geodata_requirements() {
+  if ! id -u xray >/dev/null 2>&1 || ! grep -q '^xray:' /etc/group; then
+    echo 'error: Updating geodata requires the xray user and group to exist.'
+    return 1
+  fi
+}
+
 update_geodata() {
-  create_xray_user
+  check_geodata_requirements
+  install_software 'curl' 'curl'
+  install_software 'gzip' 'gzip'
   download_geodata() {
     if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}" "${1}"; then
       echo 'error: Download failed! Please check your network or try again.'
@@ -847,14 +855,13 @@ update_geodata() {
       exit 1
     fi
   }
-  local file_ip='geoip-full.dat'
-  local file_site='geosite-expand.dat'
+  local file_ip='geoip-full.dat.gz'
+  local file_site='geosite-expand.dat.gz'
   local download_link_geoip="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/${file_ip}"
   local download_link_geosite="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/${file_site}"
   local dir_tmp
   dir_tmp="$(mktemp -d)"
   TMP_PATHS+=("$dir_tmp")
-  [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '0' ]] && echo "warning: Xray was not installed"
   download_geodata "$download_link_geoip" "$file_ip"
   download_geodata "$download_link_geosite" "$file_site"
   cd "${dir_tmp}" || exit
@@ -865,10 +872,15 @@ update_geodata() {
     fi
   done
   cd - >/dev/null || exit 1
+  if ! gzip -d "${dir_tmp}/${file_ip}" "${dir_tmp}/${file_site}"; then
+    echo 'error: Geodata decompression failed.'
+    exit 1
+  fi
   install_geodata_dir
-  install -m 644 -o xray -g xray "${dir_tmp}/${file_site}" "${DAT_PATH}/geosite.dat"
-  install -m 644 -o xray -g xray "${dir_tmp}/${file_ip}" "${DAT_PATH}/geoip.dat"
+  install -m 644 -o xray -g xray "${dir_tmp}/${file_site%.gz}" "${DAT_PATH}/geosite.dat"
+  install -m 644 -o xray -g xray "${dir_tmp}/${file_ip%.gz}" "${DAT_PATH}/geoip.dat"
   rm -r "${dir_tmp}"
+  echo 'info: Geodata is updated. You may need to restart Xray for the changes to take effect.'
   exit 0
 }
 
@@ -943,7 +955,7 @@ show_help() {
   echo
   echo 'ACTION:'
   echo '  install                   Install/Update Xray'
-  echo '  update-geodata            Download/update GeoIP full and GeoSite expanded only'
+  echo '  update-geodata            Update GeoIP full and GeoSite expanded once'
   echo '                            Xray bundles GeoIP lite and GeoSite standard; see https://github.com/XTLS/Xray-rules-dat'
   echo '  remove                    Remove Xray'
   echo '  help                      Show help'
@@ -969,8 +981,7 @@ show_help() {
   echo "    --without-logfiles        Don't install /var/log/xray"
   echo "    --logrotate [time]        Install with logrotate."
   echo "                              [time] need be in the format of 12:34:56, under 10:00:00 should be start with 0, e.g. 01:23:45."
-  echo "    --manually-restart-later  ${red}[RISKY]${reset} Service won't restart during installation. May not work on every systems."
-  echo "                              ${red}Inconsistency may occur. You must manually restart the service after the installation.${reset}"
+  echo '    --manually-restart-later  Update Xray without stopping or restarting it; restart manually afterward'
   echo '  update-geodata:'
   echo '    -p, --proxy               Download through a proxy server'
   echo '  remove:'
@@ -989,12 +1000,6 @@ main() {
     verify_local_archive
     check_local_geodata
   fi
-
-  install_software "$package_provide_tput" 'tput'
-  red=$(tput setaf 1 2>/dev/null || true)
-  green=$(tput setaf 2 2>/dev/null || true)
-  aoi=$(tput setaf 6 2>/dev/null || true)
-  reset=$(tput sgr0 2>/dev/null || true)
 
   # Parameter information
   [[ "$CHECK" -eq '1' ]] && check_update
@@ -1127,8 +1132,12 @@ main() {
       fi
     else
       if [[ "$XRAY_RUNNING" -eq '1' ]]; then
-        echo "${red}Xray has been installed but a service restart is required."
-        echo "${red}To prevent inconsistency, manually restart the service as soon as possible.${reset}"
+        printf '\n\033[1;31m%s\n%s\n%s\n%s\n%s\033[0m\n\n' \
+          '========================================================================' \
+          'WARNING: MANUAL RESTART REQUIRED' \
+          'Xray was updated, but running instances were NOT restarted.' \
+          'To prevent inconsistency, restart all running Xray instances manually.' \
+          '========================================================================' >&2
       fi
     fi
   else

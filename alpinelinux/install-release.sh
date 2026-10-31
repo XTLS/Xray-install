@@ -11,6 +11,7 @@ HELP='0'
 UPDATE_GEODATA='0'
 LOGROTATE='0'
 BETA='0'
+NO_RESTART='0'
 
 judgment_parameters() {
     local action=''
@@ -63,6 +64,9 @@ judgment_parameters() {
         --beta)
             BETA='1'
             ;;
+        --manually-restart-later)
+            NO_RESTART='1'
+            ;;
         *)
             echo "error: Unknown option: $1"
             return 1
@@ -81,6 +85,10 @@ judgment_parameters() {
         fi
         if [ "$BETA" -eq '1' ]; then
             echo 'error: --beta can only be used with install.'
+            return 1
+        fi
+        if [ "$NO_RESTART" -eq '1' ]; then
+            echo 'error: --manually-restart-later can only be used with install.'
             return 1
         fi
         if [ "$action" = help ]; then
@@ -106,7 +114,7 @@ judgment_parameters() {
 show_help() {
     echo "usage: $0 [install | update-geodata | help] [OPTION]..."
     echo 'With no action, install/update Xray from GitHub.'
-    echo '  update-geodata     Download/update GeoIP full and GeoSite expanded only'
+    echo '  update-geodata     Update GeoIP full and GeoSite expanded once'
     echo '                     Xray bundles GeoIP lite and GeoSite standard; see https://github.com/XTLS/Xray-rules-dat'
     echo '  -l, --local <zip>  Install a local Xray zip without accessing GitHub'
     echo '                     Relative paths use the current working directory; quote paths containing spaces'
@@ -118,6 +126,7 @@ show_help() {
     echo '      --proxy <URL>  Download through an HTTP or SOCKS proxy'
     echo '      --logrotate    Enable daily log rotation, keeping seven archives'
     echo '      --beta         Install the latest available release, including pre-releases'
+    echo '      --manually-restart-later Update Xray without stopping or restarting it; restart manually afterward'
 }
 
 verify_local_archive() {
@@ -386,7 +395,7 @@ download_geodata() {
     local file download_link
     echo 'info: Xray bundles GeoIP lite as geoip.dat; replacing it with GeoIP full.'
     echo 'info: Xray bundles GeoSite standard as geosite.dat; replacing it with GeoSite expanded.'
-    for file in geoip-full.dat geosite-expand.dat; do
+    for file in geoip-full.dat.gz geosite-expand.dat.gz; do
         download_link="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/$file"
         echo "Downloading $file..."
         if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}$file" "$download_link" -# ||
@@ -399,22 +408,30 @@ download_geodata() {
             echo "error: SHA256 verification failed for $file."
             return 1
         fi
+        if ! gzip -d "${TMP_DIRECTORY}$file"; then
+            echo "error: Geodata decompression failed for $file."
+            return 1
+        fi
     done
     mv "${TMP_DIRECTORY}geoip-full.dat" "${TMP_DIRECTORY}geoip.dat"
     mv "${TMP_DIRECTORY}geosite-expand.dat" "${TMP_DIRECTORY}geosite.dat"
 }
 
 update_geodata() {
+    check_geodata_requirements
+    install_dependencies curl gzip
     download_geodata
-    create_xray_user
-    is_it_running
     install_geodata_files
-    if [ -n "$XRAY_RUNNING" ]; then
-        manage_xray_services start
-    fi
     echo 'installed: /usr/local/share/xray/geoip.dat (GeoIP full)'
     echo 'installed: /usr/local/share/xray/geosite.dat (GeoSite expanded)'
-    echo 'info: Geodata is updated.'
+    echo 'info: Geodata is updated. You may need to restart Xray for the changes to take effect.'
+}
+
+check_geodata_requirements() {
+    if ! id -u xray >/dev/null 2>&1 || ! grep -q '^xray:' /etc/group; then
+        echo 'error: Updating geodata requires the xray user and group to exist.'
+        return 1
+    fi
 }
 
 is_it_running() {
@@ -435,6 +452,17 @@ is_it_running() {
 
 manage_xray_services() {
     local action="$1" service
+    if [ "$NO_RESTART" -eq '1' ]; then
+        if [ "$action" = start ]; then
+            printf '\n\033[1;31m%s\n%s\n%s\n%s\n%s\033[0m\n\n' \
+                '========================================================================' \
+                'WARNING: MANUAL RESTART REQUIRED' \
+                'Xray was updated, but running instances were NOT restarted.' \
+                'To prevent inconsistency, restart all running Xray instances manually.' \
+                '========================================================================' >&2
+        fi
+        return 0
+    fi
     printf '%s\n' "$XRAY_RUNNING" | while IFS= read -r service; do
         rc-service "$service" "$action"
     done
@@ -455,7 +483,7 @@ create_xray_user() {
             adduser -S -D -H -h /var/empty -s /bin/false -G xray xray
         fi
     else
-        printf '%s\n' \
+        printf '\033[1;31m%s\033[0m\n' \
             "WARNING: The 'xray' user already exists and will be reused to run Xray." \
             'WARNING: Ensure this account is dedicated to Xray; it will own Xray logs and geodata.' >&2
     fi
@@ -604,12 +632,12 @@ information() {
     rm -r "$TMP_DIRECTORY"
     echo "removed: $TMP_DIRECTORY"
     echo "You may need to execute a command to remove dependent software: $(pkg_manager del) curl unzip"
+    echo "info: Xray is installed."
     if [ -n "$XRAY_RUNNING" ]; then
         manage_xray_services start
     else
         echo 'Please execute the command: rc-update add xray; rc-service xray start'
     fi
-    echo "info: Xray is installed."
 }
 
 main() {
@@ -624,7 +652,6 @@ main() {
     trap '"rm" -rf -- "$TMP_DIRECTORY" || :' EXIT
     TMP_DIRECTORY="${TMP_DIRECTORY}/"
     if [ "$UPDATE_GEODATA" -eq '1' ]; then
-        install_dependencies curl
         update_geodata
         return 0
     fi

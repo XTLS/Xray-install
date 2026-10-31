@@ -61,7 +61,17 @@ curl -O -L https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-rel
 sh install-release.sh
 ```
 
-## Proxy
+**If your current SSH connection goes through Xray, you must use `--manually-restart-later` when updating Xray to prevent a service restart from disconnecting SSH.**
+
+```sh
+sh install-release.sh --manually-restart-later
+```
+
+This option keeps the current instances running. Restart manually afterward to apply the changes.
+
+## Install or Upgrade Through a Proxy
+
+If you need a proxy, specify its address with `--proxy`:
 
 ```sh
 sh install-release.sh --proxy http://127.0.0.1:8118
@@ -115,16 +125,6 @@ sh install-release.sh help
 
 ## Management Commands
 
-For multiple instances, put the configuration files for `xray.a` in `/usr/local/etc/xray/a/`, then run:
-
-```sh
-ln -s xray /etc/init.d/xray.a
-rc-update add xray.a
-rc-service xray.a start
-```
-
-Updates stop and restore only the instances that were running.
-
 #### Enable Xray Service (Auto-start on Boot)
 
 ```sh
@@ -154,3 +154,15 @@ rc-service xray stop
 ```sh
 rc-service xray restart
 ```
+
+## Multiple Instances (Optional)
+
+To run multiple Xray instances, use a separate configuration directory for each instance. For example, place the configuration files for `xray.a` in `/usr/local/etc/xray/a/`, then run:
+
+```sh
+ln -s xray /etc/init.d/xray.a
+rc-update add xray.a
+rc-service xray.a start
+```
+
+Xray upgrades stop and restore only the instances that were running.

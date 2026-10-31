@@ -60,6 +60,8 @@ Notice: Xray will NOT log to `/var/log/xray/*.log` by default. Configure `"log"`
 
 **Install & Upgrade Xray-core**
 
+**If your current SSH connection goes through Xray, you must use `--manually-restart-later` when updating Xray to prevent a service restart from disconnecting SSH.**
+
 ```
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 ```
@@ -139,14 +141,14 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 `install` also accepts:
 
-| Option                     | Description                                                    |
-| -------------------------- | -------------------------------------------------------------- |
-| `--version <version>`      | Install a specified version.                                   |
-| `--force`                  | Force installation.                                            |
-| `--reinstall`              | Reinstall the current version.                                 |
-| `--no-update-service`      | Keep existing service files.                                   |
-| `--without-logfiles`       | Skip creating the log directory.                               |
-| `--manually-restart-later` | Do not restart service during installation. (Use with caution) |
+| Option                     | Description                                 |
+| -------------------------- | ------------------------------------------- |
+| `--version <version>`      | Install a specified version.                |
+| `--force`                  | Force installation.                         |
+| `--reinstall`              | Reinstall the current version.              |
+| `--no-update-service`      | Keep existing service files.                |
+| `--without-logfiles`       | Skip creating the log directory.            |
+| `--manually-restart-later` | Do not restart service during installation. |
 
 ## Multiple instances
 
