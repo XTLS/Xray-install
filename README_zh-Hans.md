@@ -142,14 +142,14 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 `install` 还支持以下参数：
 
-| 参数                       | 说明                                 |
-| -------------------------- | ------------------------------------ |
-| `--version <version>`      | 安装指定版本。                       |
-| `--force`                  | 强制安装。                           |
-| `--reinstall`              | 重新安装当前版本。                   |
-| `--no-update-service`      | 保留已有服务文件。                   |
-| `--without-logfiles`       | 不创建日志目录。                     |
-| `--manually-restart-later` | 安装时不重新启动服务。（须谨慎使用） |
+| 参数                       | 说明                   |
+| -------------------------- | ---------------------- |
+| `--version <version>`      | 安装指定版本。         |
+| `--force`                  | 强制安装。             |
+| `--reinstall`              | 重新安装当前版本。     |
+| `--no-update-service`      | 保留已有服务文件。     |
+| `--without-logfiles`       | 不创建日志目录。       |
+| `--manually-restart-later` | 安装时不重新启动服务。 |
 
 ## 多实例
 

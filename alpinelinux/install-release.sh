@@ -454,7 +454,12 @@ manage_xray_services() {
     local action="$1" service
     if [ "$NO_RESTART" -eq '1' ]; then
         if [ "$action" = start ]; then
-            echo 'info: Restart the running Xray instances manually to apply the update.'
+            printf '\n\033[1;31m%s\n%s\n%s\n%s\n%s\033[0m\n\n' \
+                '========================================================================' \
+                'WARNING: MANUAL RESTART REQUIRED' \
+                'Xray was updated, but running instances were NOT restarted.' \
+                'To prevent inconsistency, restart all running Xray instances manually.' \
+                '========================================================================' >&2
         fi
         return 0
     fi
@@ -478,7 +483,7 @@ create_xray_user() {
             adduser -S -D -H -h /var/empty -s /bin/false -G xray xray
         fi
     else
-        printf '%s\n' \
+        printf '\033[1;31m%s\033[0m\n' \
             "WARNING: The 'xray' user already exists and will be reused to run Xray." \
             'WARNING: Ensure this account is dedicated to Xray; it will own Xray logs and geodata.' >&2
     fi
@@ -627,12 +632,12 @@ information() {
     rm -r "$TMP_DIRECTORY"
     echo "removed: $TMP_DIRECTORY"
     echo "You may need to execute a command to remove dependent software: $(pkg_manager del) curl unzip"
+    echo "info: Xray is installed."
     if [ -n "$XRAY_RUNNING" ]; then
         manage_xray_services start
     else
         echo 'Please execute the command: rc-update add xray; rc-service xray start'
     fi
-    echo "info: Xray is installed."
 }
 
 main() {

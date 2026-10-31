@@ -142,14 +142,14 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 `install` 還支援以下參數：
 
-| 參數                       | 說明                                     |
-| -------------------------- | ---------------------------------------- |
-| `--version <version>`      | 安裝指定版本。                           |
-| `--force`                  | 強制安裝。                               |
-| `--reinstall`              | 重新安裝目前版本。                       |
-| `--no-update-service`      | 保留既有服務檔案。                       |
-| `--without-logfiles`       | 不建立日誌目錄。                         |
-| `--manually-restart-later` | 安裝期間不重新啟動服務。（使用時須謹慎） |
+| 參數                       | 說明                     |
+| -------------------------- | ------------------------ |
+| `--version <version>`      | 安裝指定版本。           |
+| `--force`                  | 強制安裝。               |
+| `--reinstall`              | 重新安裝目前版本。       |
+| `--no-update-service`      | 保留既有服務檔案。       |
+| `--without-logfiles`       | 不建立日誌目錄。         |
+| `--manually-restart-later` | 安裝期間不重新啟動服務。 |
 
 ## 多實例
 
