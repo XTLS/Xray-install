@@ -424,7 +424,7 @@ update_geodata() {
     install_geodata_files
     echo 'installed: /usr/local/share/xray/geoip.dat (GeoIP full)'
     echo 'installed: /usr/local/share/xray/geosite.dat (GeoSite expanded)'
-    echo 'info: Geodata is updated.'
+    echo 'info: Geodata is updated. You may need to restart Xray for the changes to take effect.'
 }
 
 check_geodata_requirements() {

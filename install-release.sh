@@ -880,6 +880,7 @@ update_geodata() {
   install -m 644 -o xray -g xray "${dir_tmp}/${file_site%.gz}" "${DAT_PATH}/geosite.dat"
   install -m 644 -o xray -g xray "${dir_tmp}/${file_ip%.gz}" "${DAT_PATH}/geoip.dat"
   rm -r "${dir_tmp}"
+  echo 'info: Geodata is updated. You may need to restart Xray for the changes to take effect.'
   exit 0
 }
 
