@@ -22,7 +22,7 @@ DAT_PATH=${DAT_PATH:-/usr/local/share/xray}
 # export JSON_PATH='/usr/local/etc/xray'
 JSON_PATH=${JSON_PATH:-/usr/local/etc/xray}
 
-# Set this variable only if you are starting xray with multiple configuration files:
+# Set this variable only if you are starting Xray with multiple configuration files:
 # export JSONS_PATH='/usr/local/etc/xray'
 JSONS_PATH=${JSONS_PATH:-}
 
@@ -432,7 +432,7 @@ verify_local_archive() {
 
 check_local_xray_version() {
   if ! chmod u+x "$TMP_DIRECTORY/xray" || ! "$TMP_DIRECTORY/xray" -version >/dev/null 2>&1; then
-    echo 'error: Local xray binary cannot run. Please check its architecture and format.'
+    echo 'error: Local Xray binary cannot run. Please check its architecture and format.'
     return 1
   fi
 }
@@ -596,13 +596,13 @@ create_xray_user() {
   if id -u xray >/dev/null 2>&1; then
     printf '\033[1;31m%s\033[0m\n' \
       "WARNING: The 'xray' user already exists and will be reused to run Xray." \
-      'WARNING: Ensure this account is dedicated to Xray; it will own Xray logs and geodata.' >&2
+      'WARNING: Ensure this user is dedicated to Xray; it will own Xray logs and geodata.' >&2
   fi
   systemd-sysusers - <<'EOF'
 u xray - "Xray" /var/empty
 EOF
   if [[ "$(id -u xray)" -eq '0' || "$(id -g xray)" -eq '0' ]]; then
-    echo 'error: The xray account must have a non-root user and group.'
+    echo 'error: The xray user and its primary group must be non-root.'
     exit 1
   fi
 }
@@ -749,7 +749,7 @@ ExecStart=/usr/local/bin/xray run -config ${JSON_PATH}/%i.json" > \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_single_conf.conf'
   fi
   echo "info: Systemd service files have been installed successfully!"
-  echo "${red}warning: ${green}The following are the actual parameters for the xray service startup."
+  echo "${red}warning: ${green}The following are the actual parameters for the Xray service startup."
   echo "${red}warning: ${green}Please make sure the configuration file path is correctly set.${reset}"
   systemd_cat_config /etc/systemd/system/xray.service
   # shellcheck disable=SC2154

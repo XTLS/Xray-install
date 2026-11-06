@@ -174,7 +174,7 @@ verify_local_archive() {
 
 check_local_xray_version() {
     if ! chmod u+x "$TMP_DIRECTORY/xray" || ! "$TMP_DIRECTORY/xray" -version >/dev/null 2>&1; then
-        echo 'error: Local xray binary cannot run. Please check its architecture and format.'
+        echo 'error: Local Xray binary cannot run. Please check its architecture and format.'
         return 1
     fi
 }
@@ -485,7 +485,7 @@ create_xray_user() {
     else
         printf '\033[1;31m%s\033[0m\n' \
             "WARNING: The 'xray' user already exists and will be reused to run Xray." \
-            'WARNING: Ensure this account is dedicated to Xray; it will own Xray logs and geodata.' >&2
+            'WARNING: Ensure this user is dedicated to Xray; it will own Xray logs and geodata.' >&2
     fi
 }
 
