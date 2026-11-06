@@ -427,33 +427,23 @@ check_local_xray_version() {
   fi
 }
 
-check_local_geodata() {
-  local file
-  for file in "$LOCAL_GEOIP" "$LOCAL_GEOSITE"; do
-    [[ -n "$file" ]] || continue
-    if [[ ! -f "$file" || ! -r "$file" || ! -s "$file" ]]; then
-      echo "error: Local geodata must be a readable, non-empty file: $file"
-      return 1
-    fi
-  done
-}
-
 prepare_local_geodata() {
   # Preserve the existing switches that disable geodata installation.
   if [[ "$NO_GEODATA" -eq '1' || -f "${DAT_PATH}/.undat" ]]; then
     return 0
   fi
-  local file
-  if [[ -n "$LOCAL_GEOIP" ]]; then
-    cp -- "$LOCAL_GEOIP" "${TMP_DIRECTORY}/geoip.dat"
-  fi
-  if [[ -n "$LOCAL_GEOSITE" ]]; then
-    cp -- "$LOCAL_GEOSITE" "${TMP_DIRECTORY}/geosite.dat"
-  fi
+  local file source
   for file in geoip.dat geosite.dat; do
-    if [[ ! -f "${TMP_DIRECTORY}/$file" || ! -r "${TMP_DIRECTORY}/$file" || ! -s "${TMP_DIRECTORY}/$file" ]]; then
-      echo "error: Missing, empty or unreadable geodata: $file"
+    case "$file" in
+    geoip.dat) source="${LOCAL_GEOIP:-${TMP_DIRECTORY}/$file}" ;;
+    geosite.dat) source="${LOCAL_GEOSITE:-${TMP_DIRECTORY}/$file}" ;;
+    esac
+    if [[ ! -f "$source" || ! -r "$source" || ! -s "$source" ]]; then
+      echo "error: Missing, empty or unreadable geodata: $source"
       return 1
+    fi
+    if [[ "$source" != "${TMP_DIRECTORY}/$file" ]]; then
+      cp -- "$source" "${TMP_DIRECTORY}/$file"
     fi
   done
 }
@@ -979,7 +969,6 @@ main() {
   identify_the_operating_system_and_architecture
   if [[ -n "$LOCAL_FILE" ]]; then
     verify_local_archive
-    check_local_geodata
   fi
 
   # Parameter information
