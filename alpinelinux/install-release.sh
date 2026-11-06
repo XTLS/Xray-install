@@ -440,7 +440,12 @@ install_xray() {
 }
 
 install_geodata_files() {
-    install -d -m 755 -o xray -g xray /usr/local/share/xray/
+    if [ -d /usr/local/share/xray ]; then
+        find /usr/local/share/xray -type d -exec chown xray:xray {} + -exec chmod 755 {} +
+        find /usr/local/share/xray -type f -exec chown xray:xray {} + -exec chmod 644 {} +
+    else
+        install -d -m 755 -o xray -g xray /usr/local/share/xray/
+    fi
     install -m 644 -o xray -g xray "${TMP_DIRECTORY}geoip.dat" "/usr/local/share/xray/geoip.dat"
     install -m 644 -o xray -g xray "${TMP_DIRECTORY}geosite.dat" "/usr/local/share/xray/geosite.dat"
 }

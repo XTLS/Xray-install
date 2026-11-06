@@ -555,7 +555,12 @@ install_file() {
 }
 
 install_geodata_dir() {
-  install -d -m 755 -o xray -g xray "$DAT_PATH"
+  if [[ -d "$DAT_PATH" ]]; then
+    find "${DAT_PATH%/}" -type d -exec chown xray:xray {} + -exec chmod 755 {} +
+    find "${DAT_PATH%/}" -type f -exec chown xray:xray {} + -exec chmod 644 {} +
+  else
+    install -d -m 755 -o xray -g xray "$DAT_PATH"
+  fi
 }
 
 install_xray() {
