@@ -568,23 +568,24 @@ install_xray() {
     GEODATA='1'
   fi
 
-  # Install Xray configuration file to $JSON_PATH
-  # shellcheck disable=SC2153
-  if [[ -z "$JSONS_PATH" ]] && [[ ! -d "$JSON_PATH" ]]; then
-    install -d -m 750 -o 0 -g xray "$JSON_PATH"
-    install -m 640 -o 0 -g xray /dev/null "${JSON_PATH}/config.json"
-    echo "{}" >"${JSON_PATH}/config.json"
-    CONFIG_NEW='1'
-  fi
-
-  # Install Xray configuration file to $JSONS_PATH
-  if [[ -n "$JSONS_PATH" ]] && [[ ! -d "$JSONS_PATH" ]]; then
-    install -d -m 750 -o 0 -g xray "$JSONS_PATH"
-    for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_stats 08_fakedns 09_metrics 10_observatory 11_geodata 12_env 99_version; do
-      install -m 640 -o 0 -g xray /dev/null "${JSONS_PATH}/${BASE}.json"
-      echo '{}' >"${JSONS_PATH}/${BASE}.json"
-    done
-    CONFDIR='1'
+  # Install Xray configuration files and maintain existing permissions.
+  local config_path="${JSONS_PATH:-$JSON_PATH}"
+  if [[ -d "$config_path" ]]; then
+    find "${config_path%/}" -type d -exec chown 0:xray {} + -exec chmod 750 {} +
+    find "${config_path%/}" -type f -name '*.json' -exec chown 0:xray {} + -exec chmod 640 {} +
+  else
+    install -d -m 750 -o 0 -g xray "$config_path"
+    if [[ -z "$JSONS_PATH" ]]; then
+      install -m 640 -o 0 -g xray /dev/null "${config_path}/config.json"
+      echo '{}' >"${config_path}/config.json"
+      CONFIG_NEW='1'
+    else
+      for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_stats 08_fakedns 09_metrics 10_observatory 11_geodata 12_env 99_version; do
+        install -m 640 -o 0 -g xray /dev/null "${config_path}/${BASE}.json"
+        echo '{}' >"${config_path}/${BASE}.json"
+      done
+      CONFDIR='1'
+    fi
   fi
 
   # Used to store Xray log files

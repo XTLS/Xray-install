@@ -31,7 +31,7 @@ Bash script for installing Xray in operating systems such as CentOS / Debian / O
 >    | GeoSite data            | `/usr/local/share/xray/geosite.dat` | `xray:xray` | `0644`      |
 >    | Log directory           | `/var/log/xray/`                    | `xray:xray` | `0700`      |
 >
->    **Directory and file permissions from older installations are not automatically migrated. Adjust them manually according to the table above. Alternatively, back up your configuration and data, completely uninstall the older version and delete all related directories and files, then reinstall.**
+>    **Upgrades overwrite permissions as shown above.**
 >
 >    **Custom configurations (if any)**: Your custom configuration directories and new configuration files should also follow the permission rules for "Configuration directory" and "Configuration files" in the table above.
 >

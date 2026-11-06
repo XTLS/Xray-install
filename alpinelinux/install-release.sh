@@ -454,6 +454,9 @@ install_confdir() {
             echo '{}' >"/usr/local/etc/xray/$BASE.json"
         done
         CONFDIR='1'
+    else
+        find /usr/local/etc/xray -type d -exec chown 0:xray {} + -exec chmod 750 {} +
+        find /usr/local/etc/xray -type f -name '*.json' -exec chown 0:xray {} + -exec chmod 640 {} +
     fi
 }
 
