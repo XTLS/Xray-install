@@ -472,7 +472,7 @@ create_xray_user() {
         else
             adduser -S -D -H -h /var/empty -s /bin/false -G xray xray
         fi
-    else
+    elif [ ! -f '/usr/local/bin/xray' ]; then
         printf '\033[1;31m%s\033[0m\n' \
             "WARNING: The 'xray' user already exists and will be reused to run Xray." \
             'WARNING: Ensure this user is dedicated to Xray; it will own Xray logs and geodata.' >&2

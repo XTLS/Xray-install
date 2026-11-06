@@ -575,7 +575,7 @@ decompression() {
 }
 
 create_xray_user() {
-  if id -u xray >/dev/null 2>&1; then
+  if [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '0' ]] && id -u xray >/dev/null 2>&1; then
     printf '\033[1;31m%s\033[0m\n' \
       "WARNING: The 'xray' user already exists and will be reused to run Xray." \
       'WARNING: Ensure this user is dedicated to Xray; it will own Xray logs and geodata.' >&2
