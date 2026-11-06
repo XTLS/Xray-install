@@ -428,8 +428,7 @@ check_local_xray_version() {
 }
 
 prepare_local_geodata() {
-  # Preserve the existing switches that disable geodata installation.
-  if [[ "$NO_GEODATA" -eq '1' || -f "${DAT_PATH}/.undat" ]]; then
+  if [[ "$NO_GEODATA" -eq '1' ]]; then
     return 0
   fi
   local file source
@@ -598,8 +597,7 @@ install_xray() {
   if [[ -d "$DAT_PATH" ]]; then
     chown -hR xray:xray "$DAT_PATH"
   fi
-  # Skip archive geodata when --without-geodata or $DAT_PATH/.undat is present.
-  if [[ "$NO_GEODATA" -eq '0' ]] && [[ ! -f "${DAT_PATH}/.undat" ]]; then
+  if [[ "$NO_GEODATA" -eq '0' ]]; then
     install_geodata_dir
     install_file geoip.dat
     install_file geosite.dat
