@@ -118,7 +118,6 @@ show_help() {
     echo '                     Xray bundles GeoIP lite and GeoSite standard; see https://github.com/XTLS/Xray-rules-dat'
     echo '  -l, --local <zip>  Install a local Xray zip without accessing GitHub'
     echo '                     Relative paths use the current working directory; quote paths containing spaces'
-    echo '                     Verify <zip>.dgst if present; warn and continue if absent'
     echo '                     Missing tools may be installed from system package repositories'
     echo '                     Uses bundled geodata unless --geoip or --geosite is specified'
     echo '      --geoip <file>  Use a local GeoIP file with --local'
@@ -127,39 +126,6 @@ show_help() {
     echo '      --logrotate    Enable daily log rotation, keeping seven archives'
     echo '      --beta         Install the latest available release, including pre-releases'
     echo '      --manually-restart-later Update Xray without stopping or restarting it; restart manually afterward'
-}
-
-verify_local_archive() {
-    local digest_file="${LOCAL_FILE}.dgst" checksum local_sum
-    if [ ! -f "$LOCAL_FILE" ] || [ ! -r "$LOCAL_FILE" ]; then
-        echo "error: Local Xray archive is not a readable file: $LOCAL_FILE"
-        return 1
-    fi
-    if [ ! -e "$digest_file" ] && [ ! -L "$digest_file" ]; then
-        echo "warning: No local verification file found: $digest_file; continuing without SHA256 verification."
-        return 0
-    fi
-    if [ ! -f "$digest_file" ] || [ ! -r "$digest_file" ]; then
-        echo "error: Local verification file is not readable: $digest_file"
-        return 1
-    fi
-    checksum="$(awk -F '=' '/^[[:space:]]*SHA(2-)?256[[:space:]]*=/ {
-        if (NF != 2) { print "invalid"; next }
-        value = $2
-        sub(/^[[:space:]]*/, "", value)
-        sub(/[[:space:]]*$/, "", value)
-        print tolower(value)
-    }' "$digest_file")"
-    if ! local_sum="$(sha256sum "$LOCAL_FILE")"; then
-        echo "error: Could not calculate SHA256 for $LOCAL_FILE"
-        return 1
-    fi
-    local_sum="${local_sum%% *}"
-    if [ "$checksum" != "$local_sum" ]; then
-        echo "error: SHA256 check failed for $LOCAL_FILE"
-        return 1
-    fi
-    echo 'info: Local Xray archive passed SHA256 verification.'
 }
 
 check_local_xray_version() {
@@ -309,10 +275,9 @@ install_dependencies() {
 
 curl_with_proxy() {
     if [ -n "$PROXY" ]; then
-        curl --proxy "$PROXY" "$@"
-    else
-        curl "$@"
+        set -- --proxy "$PROXY" "$@"
     fi
+    curl --retry 5 --retry-delay 10 "$@"
 }
 
 get_prerelease() {
@@ -635,7 +600,6 @@ main() {
     fi
     identify_architecture
     if [ -n "$LOCAL_FILE" ]; then
-        verify_local_archive
         install_dependencies unzip
     else
         install_dependencies curl unzip
