@@ -561,9 +561,6 @@ install_geodata_dir() {
 install_xray() {
   # Install Xray binary to /usr/local/bin/ and $DAT_PATH
   install_file xray
-  if [[ -d "$DAT_PATH" ]]; then
-    chown -hR xray:xray "$DAT_PATH"
-  fi
   if [[ "$NO_GEODATA" -eq '0' ]]; then
     install_geodata_dir
     install_file geoip.dat
