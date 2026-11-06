@@ -408,16 +408,6 @@ verify_local_archive() {
     sub(/[[:space:]]*$/, "", value)
     print tolower(value)
   }' "$digest_file")"
-  case "$checksum" in
-  '' | *[!0-9a-f]*)
-    echo "error: Missing or invalid SHA256 digest in $digest_file"
-    return 1
-    ;;
-  esac
-  if [ "${#checksum}" -ne 64 ]; then
-    echo "error: Missing or invalid SHA256 digest in $digest_file"
-    return 1
-  fi
   if ! local_sum="$(sha256sum "$LOCAL_FILE")"; then
     echo "error: Could not calculate SHA256 for $LOCAL_FILE"
     return 1
@@ -499,7 +489,6 @@ get_latest_version() {
   if curl -x "${PROXY}" -sSfLo "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
     echo "get release list success"
   else
-    "rm" "$tmp_file"
     echo 'error: Failed to get release list, please check your network.'
     exit 1
   fi
@@ -511,16 +500,13 @@ get_latest_version() {
       echo "error: Failed to get the latest release version."
       echo "Welcome bug report:https://github.com/XTLS/Xray-install/issues"
     fi
-    "rm" "$tmp_file"
     exit 1
   fi
-  "rm" "$tmp_file"
   RELEASE_LATEST="v${RELEASE_LATEST#v}"
   url='https://api.github.com/repos/XTLS/Xray-core/releases'
   if curl -x "${PROXY}" -sSfLo "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
     echo "get release list success"
   else
-    "rm" "$tmp_file"
     echo 'error: Failed to get release list, please check your network.'
     exit 1
   fi
@@ -533,7 +519,6 @@ get_latest_version() {
       echo "error: Failed to get the latest release version."
       echo "Welcome bug report:https://github.com/XTLS/Xray-install/issues"
     fi
-    "rm" "$tmp_file"
     exit 1
   fi
   local i url_zip
@@ -545,7 +530,6 @@ get_latest_version() {
       break
     fi
   done
-  "rm" "$tmp_file"
 }
 
 version_gt() {
@@ -585,8 +569,6 @@ download_xray() {
 decompression() {
   if ! unzip -q "$1" -d "$TMP_DIRECTORY"; then
     echo 'error: Xray decompression failed.'
-    "rm" -r "$TMP_DIRECTORY"
-    echo "removed: $TMP_DIRECTORY"
     exit 1
   fi
   echo "info: Extract the Xray package to $TMP_DIRECTORY and prepare it for installation."
@@ -879,7 +861,6 @@ update_geodata() {
   install_geodata_dir
   install -m 644 -o xray -g xray "${dir_tmp}/${file_site%.gz}" "${DAT_PATH}/geosite.dat"
   install -m 644 -o xray -g xray "${dir_tmp}/${file_ip%.gz}" "${DAT_PATH}/geoip.dat"
-  rm -r "${dir_tmp}"
   echo 'info: Geodata is updated. You may need to restart Xray for the changes to take effect.'
   exit 0
 }
@@ -1050,11 +1031,7 @@ main() {
     fi
     install_software 'curl' 'curl'
     install_software 'unzip' 'unzip'
-    if ! download_xray; then
-      "rm" -r "$TMP_DIRECTORY"
-      echo "removed: $TMP_DIRECTORY"
-      exit 1
-    fi
+    download_xray || exit 1
     decompression "$ZIP_FILE"
   fi
 
@@ -1120,8 +1097,6 @@ main() {
     echo 'installed: /etc/systemd/system/xray.service'
     echo 'installed: /etc/systemd/system/xray@.service'
   fi
-  "rm" -r "$TMP_DIRECTORY"
-  echo "removed: $TMP_DIRECTORY"
   get_current_version
   echo "info: Xray $CURRENT_VERSION is installed."
   echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"

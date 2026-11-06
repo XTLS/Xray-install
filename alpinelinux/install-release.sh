@@ -150,16 +150,6 @@ verify_local_archive() {
         sub(/[[:space:]]*$/, "", value)
         print tolower(value)
     }' "$digest_file")"
-    case "$checksum" in
-    '' | *[!0-9a-f]*)
-        echo "error: Missing or invalid SHA256 digest in $digest_file"
-        return 1
-        ;;
-    esac
-    if [ "${#checksum}" -ne 64 ]; then
-        echo "error: Missing or invalid SHA256 digest in $digest_file"
-        return 1
-    fi
     if ! local_sum="$(sha256sum "$LOCAL_FILE")"; then
         echo "error: Could not calculate SHA256 for $LOCAL_FILE"
         return 1
@@ -629,8 +619,6 @@ information() {
     if [ "$LOGROTATE" -eq '1' ]; then
         echo 'installed: /etc/logrotate.d/xray'
     fi
-    rm -r "$TMP_DIRECTORY"
-    echo "removed: $TMP_DIRECTORY"
     echo "You may need to execute a command to remove dependent software: $(pkg_manager del) curl unzip"
     echo "info: Xray is installed."
     if [ -n "$XRAY_RUNNING" ]; then
