@@ -22,7 +22,7 @@ DAT_PATH=${DAT_PATH:-/usr/local/share/xray}
 # export JSON_PATH='/usr/local/etc/xray'
 JSON_PATH=${JSON_PATH:-/usr/local/etc/xray}
 
-# Set this variable only if you are starting xray with multiple configuration files:
+# Set this variable only if you are starting Xray with multiple configuration files:
 # export JSONS_PATH='/usr/local/etc/xray'
 JSONS_PATH=${JSONS_PATH:-}
 
@@ -387,83 +387,29 @@ judgment_parameters() {
   fi
 }
 
-verify_local_archive() {
-  local digest_file="${LOCAL_FILE}.dgst" checksum local_sum
-  if [ ! -f "$LOCAL_FILE" ] || [ ! -r "$LOCAL_FILE" ]; then
-    echo "error: Local Xray archive is not a readable file: $LOCAL_FILE"
-    return 1
-  fi
-  if [ ! -e "$digest_file" ] && [ ! -L "$digest_file" ]; then
-    echo "warning: No local verification file found: $digest_file; continuing without SHA256 verification."
-    return 0
-  fi
-  if [ ! -f "$digest_file" ] || [ ! -r "$digest_file" ]; then
-    echo "error: Local verification file is not readable: $digest_file"
-    return 1
-  fi
-  checksum="$(awk -F '=' '/^[[:space:]]*SHA(2-)?256[[:space:]]*=/ {
-    if (NF != 2) { print "invalid"; next }
-    value = $2
-    sub(/^[[:space:]]*/, "", value)
-    sub(/[[:space:]]*$/, "", value)
-    print tolower(value)
-  }' "$digest_file")"
-  case "$checksum" in
-  '' | *[!0-9a-f]*)
-    echo "error: Missing or invalid SHA256 digest in $digest_file"
-    return 1
-    ;;
-  esac
-  if [ "${#checksum}" -ne 64 ]; then
-    echo "error: Missing or invalid SHA256 digest in $digest_file"
-    return 1
-  fi
-  if ! local_sum="$(sha256sum "$LOCAL_FILE")"; then
-    echo "error: Could not calculate SHA256 for $LOCAL_FILE"
-    return 1
-  fi
-  local_sum="${local_sum%% *}"
-  if [ "$checksum" != "$local_sum" ]; then
-    echo "error: SHA256 check failed for $LOCAL_FILE"
-    return 1
-  fi
-  echo 'info: Local Xray archive passed SHA256 verification.'
-}
-
 check_local_xray_version() {
   if ! chmod u+x "$TMP_DIRECTORY/xray" || ! "$TMP_DIRECTORY/xray" -version >/dev/null 2>&1; then
-    echo 'error: Local xray binary cannot run. Please check its architecture and format.'
+    echo 'error: Local Xray binary cannot run. Please check its architecture and format.'
     return 1
   fi
-}
-
-check_local_geodata() {
-  local file
-  for file in "$LOCAL_GEOIP" "$LOCAL_GEOSITE"; do
-    [[ -n "$file" ]] || continue
-    if [[ ! -f "$file" || ! -r "$file" || ! -s "$file" ]]; then
-      echo "error: Local geodata must be a readable, non-empty file: $file"
-      return 1
-    fi
-  done
 }
 
 prepare_local_geodata() {
-  # Preserve the existing switches that disable geodata installation.
-  if [[ "$NO_GEODATA" -eq '1' || -f "${DAT_PATH}/.undat" ]]; then
+  if [[ "$NO_GEODATA" -eq '1' ]]; then
     return 0
   fi
-  local file
-  if [[ -n "$LOCAL_GEOIP" ]]; then
-    cp -- "$LOCAL_GEOIP" "${TMP_DIRECTORY}/geoip.dat"
-  fi
-  if [[ -n "$LOCAL_GEOSITE" ]]; then
-    cp -- "$LOCAL_GEOSITE" "${TMP_DIRECTORY}/geosite.dat"
-  fi
+  local file source
   for file in geoip.dat geosite.dat; do
-    if [[ ! -f "${TMP_DIRECTORY}/$file" || ! -r "${TMP_DIRECTORY}/$file" || ! -s "${TMP_DIRECTORY}/$file" ]]; then
-      echo "error: Missing, empty or unreadable geodata: $file"
+    case "$file" in
+    geoip.dat) source="${LOCAL_GEOIP:-${TMP_DIRECTORY}/$file}" ;;
+    geosite.dat) source="${LOCAL_GEOSITE:-${TMP_DIRECTORY}/$file}" ;;
+    esac
+    if [[ ! -f "$source" || ! -r "$source" || ! -s "$source" ]]; then
+      echo "error: Missing, empty or unreadable geodata: $source"
       return 1
+    fi
+    if [[ "$source" != "${TMP_DIRECTORY}/$file" ]]; then
+      cp -- "$source" "${TMP_DIRECTORY}/$file"
     fi
   done
 }
@@ -499,7 +445,6 @@ get_latest_version() {
   if curl -x "${PROXY}" -sSfLo "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
     echo "get release list success"
   else
-    "rm" "$tmp_file"
     echo 'error: Failed to get release list, please check your network.'
     exit 1
   fi
@@ -511,16 +456,13 @@ get_latest_version() {
       echo "error: Failed to get the latest release version."
       echo "Welcome bug report:https://github.com/XTLS/Xray-install/issues"
     fi
-    "rm" "$tmp_file"
     exit 1
   fi
-  "rm" "$tmp_file"
   RELEASE_LATEST="v${RELEASE_LATEST#v}"
   url='https://api.github.com/repos/XTLS/Xray-core/releases'
   if curl -x "${PROXY}" -sSfLo "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
     echo "get release list success"
   else
-    "rm" "$tmp_file"
     echo 'error: Failed to get release list, please check your network.'
     exit 1
   fi
@@ -533,7 +475,6 @@ get_latest_version() {
       echo "error: Failed to get the latest release version."
       echo "Welcome bug report:https://github.com/XTLS/Xray-install/issues"
     fi
-    "rm" "$tmp_file"
     exit 1
   fi
   local i url_zip
@@ -545,7 +486,6 @@ get_latest_version() {
       break
     fi
   done
-  "rm" "$tmp_file"
 }
 
 version_gt() {
@@ -585,24 +525,22 @@ download_xray() {
 decompression() {
   if ! unzip -q "$1" -d "$TMP_DIRECTORY"; then
     echo 'error: Xray decompression failed.'
-    "rm" -r "$TMP_DIRECTORY"
-    echo "removed: $TMP_DIRECTORY"
     exit 1
   fi
   echo "info: Extract the Xray package to $TMP_DIRECTORY and prepare it for installation."
 }
 
 create_xray_user() {
-  if id -u xray >/dev/null 2>&1; then
+  if [[ "$XRAY_IS_INSTALLED_BEFORE_RUNNING_SCRIPT" -eq '0' ]] && id -u xray >/dev/null 2>&1; then
     printf '\033[1;31m%s\033[0m\n' \
       "WARNING: The 'xray' user already exists and will be reused to run Xray." \
-      'WARNING: Ensure this account is dedicated to Xray; it will own Xray logs and geodata.' >&2
+      'WARNING: Ensure this user is dedicated to Xray; it will own Xray logs and geodata.' >&2
   fi
   systemd-sysusers - <<'EOF'
 u xray - "Xray" /var/empty
 EOF
   if [[ "$(id -u xray)" -eq '0' || "$(id -g xray)" -eq '0' ]]; then
-    echo 'error: The xray account must have a non-root user and group.'
+    echo 'error: The xray user and its primary group must be non-root.'
     exit 1
   fi
 }
@@ -617,40 +555,42 @@ install_file() {
 }
 
 install_geodata_dir() {
-  install -d -m 755 -o xray -g xray "$DAT_PATH"
+  if [[ -d "$DAT_PATH" ]]; then
+    find "${DAT_PATH%/}" -type d -exec chown xray:xray {} + -exec chmod 755 {} +
+    find "${DAT_PATH%/}" -type f -exec chown xray:xray {} + -exec chmod 644 {} +
+  else
+    install -d -m 755 -o xray -g xray "$DAT_PATH"
+  fi
 }
 
 install_xray() {
   # Install Xray binary to /usr/local/bin/ and $DAT_PATH
   install_file xray
-  if [[ -d "$DAT_PATH" ]]; then
-    chown -hR xray:xray "$DAT_PATH"
-  fi
-  # Skip archive geodata when --without-geodata or $DAT_PATH/.undat is present.
-  if [[ "$NO_GEODATA" -eq '0' ]] && [[ ! -f "${DAT_PATH}/.undat" ]]; then
+  if [[ "$NO_GEODATA" -eq '0' ]]; then
     install_geodata_dir
     install_file geoip.dat
     install_file geosite.dat
     GEODATA='1'
   fi
 
-  # Install Xray configuration file to $JSON_PATH
-  # shellcheck disable=SC2153
-  if [[ -z "$JSONS_PATH" ]] && [[ ! -d "$JSON_PATH" ]]; then
-    install -d -m 750 -o 0 -g xray "$JSON_PATH"
-    install -m 640 -o 0 -g xray /dev/null "${JSON_PATH}/config.json"
-    echo "{}" >"${JSON_PATH}/config.json"
-    CONFIG_NEW='1'
-  fi
-
-  # Install Xray configuration file to $JSONS_PATH
-  if [[ -n "$JSONS_PATH" ]] && [[ ! -d "$JSONS_PATH" ]]; then
-    install -d -m 750 -o 0 -g xray "$JSONS_PATH"
-    for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_stats 08_fakedns 09_metrics 10_observatory 11_geodata 12_env 99_version; do
-      install -m 640 -o 0 -g xray /dev/null "${JSONS_PATH}/${BASE}.json"
-      echo '{}' >"${JSONS_PATH}/${BASE}.json"
-    done
-    CONFDIR='1'
+  # Install Xray configuration files and maintain existing permissions.
+  local config_path="${JSONS_PATH:-$JSON_PATH}"
+  if [[ -d "$config_path" ]]; then
+    find "${config_path%/}" -type d -exec chown 0:xray {} + -exec chmod 750 {} +
+    find "${config_path%/}" -type f -name '*.json' -exec chown 0:xray {} + -exec chmod 640 {} +
+  else
+    install -d -m 750 -o 0 -g xray "$config_path"
+    if [[ -z "$JSONS_PATH" ]]; then
+      install -m 640 -o 0 -g xray /dev/null "${config_path}/config.json"
+      echo '{}' >"${config_path}/config.json"
+      CONFIG_NEW='1'
+    else
+      for BASE in 00_log 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_stats 08_fakedns 09_metrics 10_observatory 11_geodata 12_env 99_version; do
+        install -m 640 -o 0 -g xray /dev/null "${config_path}/${BASE}.json"
+        echo '{}' >"${config_path}/${BASE}.json"
+      done
+      CONFDIR='1'
+    fi
   fi
 
   # Used to store Xray log files
@@ -749,7 +689,7 @@ ExecStart=/usr/local/bin/xray run -config ${JSON_PATH}/%i.json" > \
       '/etc/systemd/system/xray@.service.d/10-donot_touch_single_conf.conf'
   fi
   echo "info: Systemd service files have been installed successfully!"
-  echo "${red}warning: ${green}The following are the actual parameters for the xray service startup."
+  echo "${red}warning: ${green}The following are the actual parameters for the Xray service startup."
   echo "${red}warning: ${green}Please make sure the configuration file path is correctly set.${reset}"
   systemd_cat_config /etc/systemd/system/xray.service
   # shellcheck disable=SC2154
@@ -879,7 +819,6 @@ update_geodata() {
   install_geodata_dir
   install -m 644 -o xray -g xray "${dir_tmp}/${file_site%.gz}" "${DAT_PATH}/geosite.dat"
   install -m 644 -o xray -g xray "${dir_tmp}/${file_ip%.gz}" "${DAT_PATH}/geoip.dat"
-  rm -r "${dir_tmp}"
   echo 'info: Geodata is updated. You may need to restart Xray for the changes to take effect.'
   exit 0
 }
@@ -969,7 +908,6 @@ show_help() {
   echo '    --beta                    Install the pre-release version if it is exist'
   echo '    -l, --local <zip>         Install a local Xray zip without accessing GitHub'
   echo '                              Relative paths use the current working directory; quote paths containing spaces'
-  echo '                              Verify <zip>.dgst if present; warn and continue if absent'
   echo '                              Missing tools may be installed from system package repositories'
   echo '                              Uses bundled geodata unless --geoip or --geosite is specified'
   echo '    --geoip <file>            Use a local GeoIP file with --local'
@@ -996,10 +934,6 @@ main() {
   [[ "$HELP" -eq '1' ]] && show_help
   check_if_running_as_root
   identify_the_operating_system_and_architecture
-  if [[ -n "$LOCAL_FILE" ]]; then
-    verify_local_archive
-    check_local_geodata
-  fi
 
   # Parameter information
   [[ "$CHECK" -eq '1' ]] && check_update
@@ -1050,11 +984,7 @@ main() {
     fi
     install_software 'curl' 'curl'
     install_software 'unzip' 'unzip'
-    if ! download_xray; then
-      "rm" -r "$TMP_DIRECTORY"
-      echo "removed: $TMP_DIRECTORY"
-      exit 1
-    fi
+    download_xray || exit 1
     decompression "$ZIP_FILE"
   fi
 
@@ -1120,8 +1050,6 @@ main() {
     echo 'installed: /etc/systemd/system/xray.service'
     echo 'installed: /etc/systemd/system/xray@.service'
   fi
-  "rm" -r "$TMP_DIRECTORY"
-  echo "removed: $TMP_DIRECTORY"
   get_current_version
   echo "info: Xray $CURRENT_VERSION is installed."
   echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"

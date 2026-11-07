@@ -118,7 +118,6 @@ show_help() {
     echo '                     Xray bundles GeoIP lite and GeoSite standard; see https://github.com/XTLS/Xray-rules-dat'
     echo '  -l, --local <zip>  Install a local Xray zip without accessing GitHub'
     echo '                     Relative paths use the current working directory; quote paths containing spaces'
-    echo '                     Verify <zip>.dgst if present; warn and continue if absent'
     echo '                     Missing tools may be installed from system package repositories'
     echo '                     Uses bundled geodata unless --geoip or --geosite is specified'
     echo '      --geoip <file>  Use a local GeoIP file with --local'
@@ -129,79 +128,26 @@ show_help() {
     echo '      --manually-restart-later Update Xray without stopping or restarting it; restart manually afterward'
 }
 
-verify_local_archive() {
-    local digest_file="${LOCAL_FILE}.dgst" checksum local_sum
-    if [ ! -f "$LOCAL_FILE" ] || [ ! -r "$LOCAL_FILE" ]; then
-        echo "error: Local Xray archive is not a readable file: $LOCAL_FILE"
-        return 1
-    fi
-    if [ ! -e "$digest_file" ] && [ ! -L "$digest_file" ]; then
-        echo "warning: No local verification file found: $digest_file; continuing without SHA256 verification."
-        return 0
-    fi
-    if [ ! -f "$digest_file" ] || [ ! -r "$digest_file" ]; then
-        echo "error: Local verification file is not readable: $digest_file"
-        return 1
-    fi
-    checksum="$(awk -F '=' '/^[[:space:]]*SHA(2-)?256[[:space:]]*=/ {
-        if (NF != 2) { print "invalid"; next }
-        value = $2
-        sub(/^[[:space:]]*/, "", value)
-        sub(/[[:space:]]*$/, "", value)
-        print tolower(value)
-    }' "$digest_file")"
-    case "$checksum" in
-    '' | *[!0-9a-f]*)
-        echo "error: Missing or invalid SHA256 digest in $digest_file"
-        return 1
-        ;;
-    esac
-    if [ "${#checksum}" -ne 64 ]; then
-        echo "error: Missing or invalid SHA256 digest in $digest_file"
-        return 1
-    fi
-    if ! local_sum="$(sha256sum "$LOCAL_FILE")"; then
-        echo "error: Could not calculate SHA256 for $LOCAL_FILE"
-        return 1
-    fi
-    local_sum="${local_sum%% *}"
-    if [ "$checksum" != "$local_sum" ]; then
-        echo "error: SHA256 check failed for $LOCAL_FILE"
-        return 1
-    fi
-    echo 'info: Local Xray archive passed SHA256 verification.'
-}
-
 check_local_xray_version() {
     if ! chmod u+x "$TMP_DIRECTORY/xray" || ! "$TMP_DIRECTORY/xray" -version >/dev/null 2>&1; then
-        echo 'error: Local xray binary cannot run. Please check its architecture and format.'
+        echo 'error: Local Xray binary cannot run. Please check its architecture and format.'
         return 1
     fi
-}
-
-check_local_geodata() {
-    local file
-    for file in "$LOCAL_GEOIP" "$LOCAL_GEOSITE"; do
-        [ -n "$file" ] || continue
-        if [ ! -f "$file" ] || [ ! -r "$file" ] || [ ! -s "$file" ]; then
-            echo "error: Local geodata must be a readable, non-empty file: $file"
-            return 1
-        fi
-    done
 }
 
 prepare_local_geodata() {
-    local file
-    if [ -n "$LOCAL_GEOIP" ]; then
-        cp "$LOCAL_GEOIP" "${TMP_DIRECTORY}geoip.dat"
-    fi
-    if [ -n "$LOCAL_GEOSITE" ]; then
-        cp "$LOCAL_GEOSITE" "${TMP_DIRECTORY}geosite.dat"
-    fi
+    local file source
     for file in geoip.dat geosite.dat; do
-        if [ ! -f "${TMP_DIRECTORY}$file" ] || [ ! -r "${TMP_DIRECTORY}$file" ] || [ ! -s "${TMP_DIRECTORY}$file" ]; then
-            echo "error: Missing, empty or unreadable geodata: $file"
+        case "$file" in
+        geoip.dat) source="${LOCAL_GEOIP:-${TMP_DIRECTORY}$file}" ;;
+        geosite.dat) source="${LOCAL_GEOSITE:-${TMP_DIRECTORY}$file}" ;;
+        esac
+        if [ ! -f "$source" ] || [ ! -r "$source" ] || [ ! -s "$source" ]; then
+            echo "error: Missing, empty or unreadable geodata: $source"
             return 1
+        fi
+        if [ "$source" != "${TMP_DIRECTORY}$file" ]; then
+            cp "$source" "${TMP_DIRECTORY}$file"
         fi
     done
 }
@@ -329,10 +275,9 @@ install_dependencies() {
 
 curl_with_proxy() {
     if [ -n "$PROXY" ]; then
-        curl --proxy "$PROXY" "$@"
-    else
-        curl "$@"
+        set -- --proxy "$PROXY" "$@"
     fi
+    curl --retry 5 --retry-delay 10 "$@"
 }
 
 get_prerelease() {
@@ -482,10 +427,10 @@ create_xray_user() {
         else
             adduser -S -D -H -h /var/empty -s /bin/false -G xray xray
         fi
-    else
+    elif [ ! -f '/usr/local/bin/xray' ]; then
         printf '\033[1;31m%s\033[0m\n' \
             "WARNING: The 'xray' user already exists and will be reused to run Xray." \
-            'WARNING: Ensure this account is dedicated to Xray; it will own Xray logs and geodata.' >&2
+            'WARNING: Ensure this user is dedicated to Xray; it will own Xray logs and geodata.' >&2
     fi
 }
 
@@ -495,7 +440,12 @@ install_xray() {
 }
 
 install_geodata_files() {
-    install -d -m 755 -o xray -g xray /usr/local/share/xray/
+    if [ -d /usr/local/share/xray ]; then
+        find /usr/local/share/xray -type d -exec chown xray:xray {} + -exec chmod 755 {} +
+        find /usr/local/share/xray -type f -exec chown xray:xray {} + -exec chmod 644 {} +
+    else
+        install -d -m 755 -o xray -g xray /usr/local/share/xray/
+    fi
     install -m 644 -o xray -g xray "${TMP_DIRECTORY}geoip.dat" "/usr/local/share/xray/geoip.dat"
     install -m 644 -o xray -g xray "${TMP_DIRECTORY}geosite.dat" "/usr/local/share/xray/geosite.dat"
 }
@@ -509,6 +459,9 @@ install_confdir() {
             echo '{}' >"/usr/local/etc/xray/$BASE.json"
         done
         CONFDIR='1'
+    else
+        find /usr/local/etc/xray -type d -exec chown 0:xray {} + -exec chmod 750 {} +
+        find /usr/local/etc/xray -type f -name '*.json' -exec chown 0:xray {} + -exec chmod 640 {} +
     fi
 }
 
@@ -629,8 +582,6 @@ information() {
     if [ "$LOGROTATE" -eq '1' ]; then
         echo 'installed: /etc/logrotate.d/xray'
     fi
-    rm -r "$TMP_DIRECTORY"
-    echo "removed: $TMP_DIRECTORY"
     echo "You may need to execute a command to remove dependent software: $(pkg_manager del) curl unzip"
     echo "info: Xray is installed."
     if [ -n "$XRAY_RUNNING" ]; then
@@ -657,8 +608,6 @@ main() {
     fi
     identify_architecture
     if [ -n "$LOCAL_FILE" ]; then
-        verify_local_archive
-        check_local_geodata
         install_dependencies unzip
     else
         install_dependencies curl unzip
