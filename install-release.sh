@@ -785,40 +785,36 @@ update_geodata() {
   check_geodata_requirements
   install_software 'curl' 'curl'
   install_software 'gzip' 'gzip'
-  download_geodata() {
-    if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}" "${1}"; then
+  stream_update_geodata() {
+    if ! curl -x "${PROXY}" -f -L -S -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}.sha256sum" "${1}.sha256sum"; then
       echo 'error: Download failed! Please check your network or try again.'
       exit 1
     fi
-    if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}.sha256sum" "${1}.sha256sum"; then
+    if ! curl -x "${PROXY}" -f -L -S -R -H 'Cache-Control: no-cache' "${1}.gz" | gzip -d > "${dir_tmp}/${2}"; then
       echo 'error: Download failed! Please check your network or try again.'
       exit 1
     fi
-  }
-  local file_ip='geoip-full.dat.gz'
-  local file_site='geosite-expand.dat.gz'
-  local download_link_geoip="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/${file_ip}"
-  local download_link_geosite="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/${file_site}"
-  local dir_tmp
-  dir_tmp="$(mktemp -d)"
-  TMP_PATHS+=("$dir_tmp")
-  download_geodata "$download_link_geoip" "$file_ip"
-  download_geodata "$download_link_geosite" "$file_site"
-  cd "${dir_tmp}" || exit
-  for i in "${dir_tmp}"/*.sha256sum; do
-    if ! sha256sum -c "${i}"; then
+    cd "${dir_tmp}" || exit
+    if ! sha256sum -c "${dir_tmp}/${2}.sha256sum"; then
       echo 'error: Check failed! Please check your network or try again.'
       exit 1
     fi
-  done
-  cd - >/dev/null || exit 1
-  if ! gzip -d "${dir_tmp}/${file_ip}" "${dir_tmp}/${file_site}"; then
-    echo 'error: Geodata decompression failed.'
-    exit 1
-  fi
+    cd - >/dev/null || exit 1
+    install -m 644 -o xray -g xray "${dir_tmp}/${2}" "${DAT_PATH}/${3}"
+    rm -f "${dir_tmp}/${2}" "${dir_tmp}/${2}.sha256sum"
+  }
+  local file_ip='geoip-full.dat'
+  local file_site='geosite-expand.dat'
+  local download_link_geoip="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/${file_ip}"
+  local download_link_geosite="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/${file_site}"
+  local install_ip='geoip.dat'
+  local install_site='geosite.dat'
+  local dir_tmp
+  dir_tmp="$(mktemp -d)"
+  TMP_PATHS+=("$dir_tmp")
   install_geodata_dir
-  install -m 644 -o xray -g xray "${dir_tmp}/${file_site%.gz}" "${DAT_PATH}/geosite.dat"
-  install -m 644 -o xray -g xray "${dir_tmp}/${file_ip%.gz}" "${DAT_PATH}/geoip.dat"
+  stream_update_geodata "${download_link_geoip}" "${file_ip}" "${install_ip}"
+  stream_update_geodata "${download_link_geosite}" "${file_site}" "${install_site}"
   echo 'info: Geodata is updated. You may need to restart Xray for the changes to take effect.'
   exit 0
 }
