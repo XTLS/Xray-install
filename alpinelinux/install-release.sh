@@ -262,7 +262,11 @@ identify_architecture() {
 install_dependencies() {
     local dependency
     for dependency; do
-        if command -v "$dependency" >/dev/null 2>&1; then
+        if [ "$dependency" = curl ]; then
+            if command curl --version >/dev/null 2>&1; then
+                continue
+            fi
+        elif command -v "$dependency" >/dev/null 2>&1; then
             continue
         fi
         echo "Installing required dependency: $dependency"
@@ -273,16 +277,16 @@ install_dependencies() {
     done
 }
 
-curl_with_proxy() {
+curl() {
     if [ -n "$PROXY" ]; then
         set -- --proxy "$PROXY" "$@"
     fi
-    curl --retry 5 --retry-delay 10 "$@"
+    command curl -q -L --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
 }
 
 get_prerelease() {
     local releases_file="${TMP_DIRECTORY}releases.json"
-    if ! curl_with_proxy -f -sSL -H 'Accept: application/vnd.github+json' -o "$releases_file" \
+    if ! curl -fsS -H 'Accept: application/vnd.github+json' -o "$releases_file" \
         'https://api.github.com/repos/XTLS/Xray-core/releases'; then
         echo 'error: Failed to get release list, please check your network.'
         return 1
@@ -309,12 +313,12 @@ get_prerelease() {
 
 download_xray() {
     echo "Downloading Xray files..."
-    if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK" -#; then
+    if ! curl -f -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK" -#; then
         echo 'error: Download failed! Please check your network or try again.'
         exit 1
     fi
 
-    if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE.dgst" "$DOWNLOAD_LINK.dgst" -#; then
+    if ! curl -f -H 'Cache-Control: no-cache' -o "$ZIP_FILE.dgst" "$DOWNLOAD_LINK.dgst" -#; then
         echo 'error: Download failed! Please check your network or try again.'
         exit 1
     fi
@@ -336,37 +340,36 @@ decompression() {
     fi
 }
 
-download_geodata() {
-    local file download_link
-    echo 'info: Xray bundles GeoIP lite as geoip.dat; replacing it with GeoIP full.'
-    echo 'info: Xray bundles GeoSite standard as geosite.dat; replacing it with GeoSite expanded.'
-    for file in geoip-full.dat.gz geosite-expand.dat.gz; do
-        download_link="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/$file"
-        echo "Downloading $file..."
-        if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}$file" "$download_link" -# ||
-            ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}$file.sha256sum" "$download_link.sha256sum" -#; then
-            echo "error: Failed to download $file or its SHA256 checksum. Please check your network or try again."
-            return 1
-        fi
-        if [ ! -s "${TMP_DIRECTORY}$file" ] ||
-            ! (cd "$TMP_DIRECTORY" && sha256sum -c "$file.sha256sum"); then
-            echo "error: SHA256 verification failed for $file."
-            return 1
-        fi
-        if ! gzip -d "${TMP_DIRECTORY}$file"; then
-            echo "error: Geodata decompression failed for $file."
-            return 1
-        fi
-    done
-    mv "${TMP_DIRECTORY}geoip-full.dat" "${TMP_DIRECTORY}geoip.dat"
-    mv "${TMP_DIRECTORY}geosite-expand.dat" "${TMP_DIRECTORY}geosite.dat"
+stream_update_geodata() {
+    local file="$1" target="$2" download_link
+    download_link="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/$file"
+    echo "Downloading ${file}.gz..."
+    if ! curl -f -# -H 'Cache-Control: no-cache' \
+        -o "${TMP_DIRECTORY}${file}.sha256sum" "${download_link}.sha256sum"; then
+        echo "error: Failed to download the SHA256 checksum for $file."
+        return 1
+    fi
+    if ! curl -f -# -H 'Cache-Control: no-cache' "${download_link}.gz" |
+        gzip -d > "${TMP_DIRECTORY}${file}"; then
+        echo "error: Failed to download or decompress ${file}.gz."
+        return 1
+    fi
+    if ! (cd "$TMP_DIRECTORY" && sha256sum -c "${file}.sha256sum"); then
+        echo "error: SHA256 verification failed for $file."
+        return 1
+    fi
+    install -m 644 -o xray -g xray "${TMP_DIRECTORY}${file}" "/usr/local/share/xray/$target"
+    rm -f "${TMP_DIRECTORY}${file}" "${TMP_DIRECTORY}${file}.sha256sum"
 }
 
 update_geodata() {
     check_geodata_requirements
     install_dependencies curl gzip
-    download_geodata
-    install_geodata_files
+    echo 'info: Xray bundles GeoIP lite as geoip.dat; replacing it with GeoIP full.'
+    echo 'info: Xray bundles GeoSite standard as geosite.dat; replacing it with GeoSite expanded.'
+    install_geodata_dir
+    stream_update_geodata geoip-full.dat geoip.dat
+    stream_update_geodata geosite-expand.dat geosite.dat
     echo 'installed: /usr/local/share/xray/geoip.dat (GeoIP full)'
     echo 'installed: /usr/local/share/xray/geosite.dat (GeoSite expanded)'
     echo 'info: Geodata is updated. You may need to restart Xray for the changes to take effect.'
@@ -439,13 +442,17 @@ install_xray() {
     install_geodata_files
 }
 
-install_geodata_files() {
+install_geodata_dir() {
     if [ -d /usr/local/share/xray ]; then
         find /usr/local/share/xray -type d -exec chown xray:xray {} + -exec chmod 755 {} +
         find /usr/local/share/xray -type f -exec chown xray:xray {} + -exec chmod 644 {} +
     else
         install -d -m 755 -o xray -g xray /usr/local/share/xray/
     fi
+}
+
+install_geodata_files() {
+    install_geodata_dir
     install -m 644 -o xray -g xray "${TMP_DIRECTORY}geoip.dat" "/usr/local/share/xray/geoip.dat"
     install -m 644 -o xray -g xray "${TMP_DIRECTORY}geosite.dat" "/usr/local/share/xray/geosite.dat"
 }
