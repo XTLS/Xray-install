@@ -131,7 +131,10 @@ cleanup() {
 trap cleanup EXIT
 
 curl() {
-  $(type -P curl) -L -q --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
+  if [[ -n "$PROXY" ]]; then
+    set -- --proxy "$PROXY" "$@"
+  fi
+  "$(type -P curl)" -q -L --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
 }
 
 systemd_cat_config() {
@@ -442,7 +445,7 @@ get_latest_version() {
   tmp_file="$(mktemp)"
   TMP_PATHS+=("$tmp_file")
   local url='https://api.github.com/repos/XTLS/Xray-core/releases/latest'
-  if curl -x "${PROXY}" -sSfLo "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
+  if curl -fsS -o "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
     echo "get release list success"
   else
     echo 'error: Failed to get release list, please check your network.'
@@ -460,7 +463,7 @@ get_latest_version() {
   fi
   RELEASE_LATEST="v${RELEASE_LATEST#v}"
   url='https://api.github.com/repos/XTLS/Xray-core/releases'
-  if curl -x "${PROXY}" -sSfLo "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
+  if curl -fsS -o "$tmp_file" -H "Accept: application/vnd.github.v3+json" "$url"; then
     echo "get release list success"
   else
     echo 'error: Failed to get release list, please check your network.'
@@ -495,14 +498,14 @@ version_gt() {
 download_xray() {
   local DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/download/${INSTALL_VERSION}/Xray-linux-${MACHINE}.zip"
   echo "Downloading Xray archive: $DOWNLOAD_LINK"
-  if curl -f -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK"; then
+  if curl -f -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK"; then
     echo "ok."
   else
     echo 'error: Download failed! Please check your network or try again.'
     return 1
   fi
   echo "Downloading verification file for Xray archive: ${DOWNLOAD_LINK}.dgst"
-  if curl -f -x "${PROXY}" -sSR -H 'Cache-Control: no-cache' -o "${ZIP_FILE}.dgst" "${DOWNLOAD_LINK}.dgst"; then
+  if curl -fsS -H 'Cache-Control: no-cache' -o "${ZIP_FILE}.dgst" "${DOWNLOAD_LINK}.dgst"; then
     echo "ok."
   else
     echo 'error: Download failed! Please check your network or try again.'
@@ -786,11 +789,11 @@ update_geodata() {
   install_software 'curl' 'curl'
   install_software 'gzip' 'gzip'
   stream_update_geodata() {
-    if ! curl -x "${PROXY}" -f -L -S -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}.sha256sum" "${1}.sha256sum"; then
+    if ! curl -f -H 'Cache-Control: no-cache' -o "${dir_tmp}/${2}.sha256sum" "${1}.sha256sum"; then
       echo 'error: Download failed! Please check your network or try again.'
       exit 1
     fi
-    if ! curl -x "${PROXY}" -f -L -S -R -H 'Cache-Control: no-cache' "${1}.gz" | gzip -d > "${dir_tmp}/${2}"; then
+    if ! curl -f -H 'Cache-Control: no-cache' "${1}.gz" | gzip -d > "${dir_tmp}/${2}"; then
       echo 'error: Download failed! Please check your network or try again.'
       exit 1
     fi

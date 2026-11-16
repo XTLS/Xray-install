@@ -262,7 +262,11 @@ identify_architecture() {
 install_dependencies() {
     local dependency
     for dependency; do
-        if command -v "$dependency" >/dev/null 2>&1; then
+        if [ "$dependency" = curl ]; then
+            if command curl --version >/dev/null 2>&1; then
+                continue
+            fi
+        elif command -v "$dependency" >/dev/null 2>&1; then
             continue
         fi
         echo "Installing required dependency: $dependency"
@@ -273,16 +277,16 @@ install_dependencies() {
     done
 }
 
-curl_with_proxy() {
+curl() {
     if [ -n "$PROXY" ]; then
         set -- --proxy "$PROXY" "$@"
     fi
-    curl --retry 5 --retry-delay 10 "$@"
+    command curl -q -L --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
 }
 
 get_prerelease() {
     local releases_file="${TMP_DIRECTORY}releases.json"
-    if ! curl_with_proxy -f -sSL -H 'Accept: application/vnd.github+json' -o "$releases_file" \
+    if ! curl -fsS -H 'Accept: application/vnd.github+json' -o "$releases_file" \
         'https://api.github.com/repos/XTLS/Xray-core/releases'; then
         echo 'error: Failed to get release list, please check your network.'
         return 1
@@ -309,12 +313,12 @@ get_prerelease() {
 
 download_xray() {
     echo "Downloading Xray files..."
-    if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK" -#; then
+    if ! curl -f -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK" -#; then
         echo 'error: Download failed! Please check your network or try again.'
         exit 1
     fi
 
-    if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "$ZIP_FILE.dgst" "$DOWNLOAD_LINK.dgst" -#; then
+    if ! curl -f -H 'Cache-Control: no-cache' -o "$ZIP_FILE.dgst" "$DOWNLOAD_LINK.dgst" -#; then
         echo 'error: Download failed! Please check your network or try again.'
         exit 1
     fi
@@ -343,8 +347,8 @@ download_geodata() {
     for file in geoip-full.dat.gz geosite-expand.dat.gz; do
         download_link="https://github.com/XTLS/Xray-rules-dat/releases/latest/download/$file"
         echo "Downloading $file..."
-        if ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}$file" "$download_link" -# ||
-            ! curl_with_proxy -f -L -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}$file.sha256sum" "$download_link.sha256sum" -#; then
+        if ! curl -f -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}$file" "$download_link" -# ||
+            ! curl -f -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}$file.sha256sum" "$download_link.sha256sum" -#; then
             echo "error: Failed to download $file or its SHA256 checksum. Please check your network or try again."
             return 1
         fi
